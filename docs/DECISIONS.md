@@ -35,3 +35,50 @@ Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blue
 - **Konteks:** Blueprint bagian 0 meminta Section 1–6 dikerjakan berurutan, sedangkan tenggat tinggal 4 hari.
 - **Keputusan:** Disetujui manusia pada 2026-11-10. Task yang tidak bergantung pada hasil CHECKPOINT (kode kontrak, logika murni enclave, kerangka simulasi, web baca-saja) boleh dikerjakan paralel. Deploy, penguncian parameter, dan keputusan cabang tetap menunggu CHECKPOINT.
 - **Alasan:** Waktu. Risikonya: kalau CHECKPOINT 1 memilih jalur cadangan TEBAK HARGA, kode sidak (S2-T5) harus diganti.
+
+## D-6 Aturan hackathon dan track (diverifikasi 2026-11-10)
+
+- **Konteks:** Bagian 2.1 dan 2.2 blueprint disusun dari sumber kedua. Sumber primer: `https://nearhackathon.com/HACKATHON.md` dan `tracks/11-memecoins.md`.
+- **Keputusan:** H-1..H-9 dan T-1..T-6 **cocok** dengan sumber primer. Tidak ada BLOCKER. Tambahan dan perbedaan:
+  1. Agent juga **tidak boleh push, force-push, atau membuat repo publik** tanpa konfirmasi eksplisit manusia. Ini ditambahkan ke daftar larangan.
+  2. Submission dikirim lewat `POST https://nearhackathon.com/api/applications`. Field yang diisi manusia: `projectName`, `leadName`, `email`, `size`, `tracks`, `nearAddress` (akun **mainnet** untuk hadiah), `projectUrl`, `demoUrl`, `idea` (20–2000 karakter), `consent`. `requestId` adalah UUID yang dibuat sekali dan dipakai ulang saat retry. Payload tidak boleh di-commit.
+  3. **Satu proyek boleh masuk beberapa track**, dalam satu submission dengan array `tracks` ("every track the project fits"). Track utama `memecoins`. Kandidat tambahan: `security` (TEE attestation) dan `privacy` (TEE, NEAR AI Cloud). Diputuskan manusia saat submit.
+  4. Q-012: kalau juri tidak bisa membuka demo, screenshot saja tidak cukup, jadi video wajib ada. Demo yang di-host dijaga sampai 18 Nov, idealnya 25 Nov.
+  5. Q-015: kalau orang yang sama juga mengirim proyek lain, README harus menyebut proyek itu.
+  6. Q-000: kredit NEAR AI $10 bisa diklaim lewat NEAR Builders (API key terpisah).
+  7. Partner BRRRAIN ("Memecoin with AI rewards") temanya mirip. README publik perlu menjelaskan bedanya. meme.cooking hanya petunjuk, tidak wajib.
+- **Alasan:** Dokumentasi primer menang (blueprint bagian 0, poin 5).
+
+## D-7 OutLayer (diverifikasi 2026-11-10 dari `/docs/near-integration`, `/docs/wasi`, `/docs/secrets`, `/docs/tee-attestation`, `docs/CLI.md`)
+
+- **`request_execution`:** bentuk di blueprint benar.
+  - `source.WasmUrl {url, hash, build_target}`.
+  - `resource_limits` **wajib** (boleh `{}`): `max_instructions` default 1e9, maksimal 5e11; `max_memory_mb` default 128, maksimal 4096; `max_execution_seconds` default 60, maksimal 180. Halaman `/docs/wasi` menyebut batas 100 miliar instruksi dan 60 detik, jadi nilai di blueprint (1e10, 128, 60) aman.
+  - `input_data` berupa String. `secrets_ref {profile, account_id}`. `response_format` salah satu dari `Text|Json|Bytes`.
+- **`payer_account_id`:** kalau dikosongkan, pengirim (yaitu kontrak kita) yang membayar dan menerima refund. **Keputusan:** diisi dengan akun pengguna (`predecessor`). Perilakunya tetap diuji di testnet (S3-T4).
+- **Biaya:** base fee + instruksi + waktu. Eksekusi yang gagal tetap dibayar sesuai resource yang terpakai. Ada view `estimate_execution_cost(resource_limits, input_len)` untuk menentukan deposit minimum.
+- **Callback:** saat sukses, isinya stdout sesuai `response_format`. Bentuk hasil saat gagal atau timeout **tidak didokumentasikan**. **Keputusan:** semua hasil yang tidak sukses atau tidak bisa di-parse diperlakukan sebagai `Failed`, lalu bentuk riilnya dicatat di `docs/TESTNET.md`.
+- **Gas:** contoh di docs memakai 100 TGas untuk request dan 10 TGas untuk callback. Kita tetap memakai 40 TGas untuk callback, sesuai blueprint.
+- **Secret yang terikat hash:** untuk sumber `WasmUrl`, secret disegel ke hash WASM, sehingga hanya biner dengan hash itu yang bisa mendekripsinya.
+  - **Penting:** secara default, aturan akses dinilai terhadap *penanda tangan transaksi* (pengguna acak), bukan kontrak. Untuk "akses hanya lewat kontrak", rencananya: `outlayer secrets set '{"NEAR_AI_API_KEY":"…"}' --wasm-hash <sha> --profile taksir --access whitelist:<akun-kontrak> --direct`.
+  - **[VERIFIKASI di S3-T4]** Belum jelas apakah aturan `--direct` menilai `predecessor` = kontrak kita, karena OutLayer dipanggil kontrak, bukan pengguna.
+- **CLI:**
+  - Pasang dengan `curl -fsSL https://raw.githubusercontent.com/out-layer/outlayer-cli/main/install.sh | sh` di WSL, atau `cargo install outlayer-cli` (Rust 1.86+).
+  - `outlayer login testnet` menyimpan private key **tanpa enkripsi** di `~/.outlayer/testnet/credentials.json`, jadi login dilakukan manusia.
+  - Uji langsung: `outlayer run --wasm <url> --hash <sha> '<json>' --secrets-profile taksir --secrets-account <owner>`.
+- **Build reproducible:** repo OutLayer menyediakan `scripts/build_github_wasm.sh --dir <dir> --target wasm32-wasip2 --twice` (image Docker terpin). **Rekomendasi:** pakai script ini di S3 supaya juri bisa membangun ulang dan mencocokkan hash. Docker Desktop sudah terpasang.
+- **WASI P2:** butuh wasmtime 28+. Error `cabi_realloc` berarti hasil build bukan komponen P2. Env var `NEAR_SENDER_ID` dan `NEAR_BLOCK_HEIGHT` tersedia.
+- **Attestation:** tidak ada route API yang didokumentasikan. Dashboard `/executions` → "View Attestation" menampilkan MRTD+RTMR0-3, `wasm_hash`, `input_hash`, `output_hash`, quote TDX, dan tautan transaksi (kuncinya `transaction_hash`). **Keputusan:** halaman Verifikasi menautkan transaksi dan dashboard, dan menjelaskan 6 langkah verifikasi pihak ketiga.
+
+## D-8 NEAR AI Cloud (diverifikasi 2026-11-10)
+
+- **API:** base URL `https://cloud-api.near.ai/v1`, header `Authorization: Bearer <key>`.
+- **List model:** docs menyebut `GET /v1/models`, sedangkan blueprint menyebut `/v1/model/list`. **Keduanya mengembalikan 200** (dicek 2026-11-10). **Keputusan:** pakai `/v1/models`.
+- **Tingkat privasi model:** Confidential TEE, 3P Confidential TEE, dan Incognito (bukan TEE). **Keputusan:** hanya model "Confidential TEE".
+- **Signature:** `GET /v1/signature/{chat_id}?signing_algo=ecdsa`.
+  - Field respons: `text`, `signature`, `signing_address`, `signing_algo`, `signature_kind`.
+  - Untuk `provider_tee`, `text` = `<MODEL_ID>:<sha256 body request>:<sha256 body response>`. Untuk `ecdsa`, verifikasi dengan recover EIP-191.
+  - Syarat: kirim model ID kanonik dengan header `x-no-aliasing: true`, hash byte persis (jangan re-serialize JSON, pakai `Accept-Encoding: identity`), dan retry singkat saat 404.
+  - Lama penyimpanan signature tidak didokumentasikan.
+- **Dampak ke enclave (S3):** output maksimal 900 byte, tapi `r` sepanjang 140 karakter bisa mencapai 560 byte UTF-8, sementara `g` (130 hex) + `a` (42) + `h` (64) + `c` + `m` juga ikut makan tempat. **Keputusan:** `r` dipotong per karakter (maksimal 140) **dan** output total dicek ≤ 900 byte. Kalau masih melebihi, `r` dipendekkan lagi.
+- **Dampak ke spike:** `consistency.mjs` mengirim header `x-no-aliasing: true`, sama seperti enclave nanti.
