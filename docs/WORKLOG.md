@@ -14,3 +14,14 @@
   - Skill agent NEAR `near-ai-cloud` dan `near-smart-contracts` dipasang di `.claude/skills/` (lihat `skills-lock.json`).
 - S1-T4 sampai S1-T6: prompt, 40 dataset, spike (`spike/`), dan vectors bersama selesai. `cd spike && node --test` → 50/50. Review menyeluruh sudah dilakukan dan temuannya diperbaiki.
 - Menunggu: API key NEAR AI dari manusia untuk S1-T7.
+
+### Titik lanjut (checkpoint 2026-11-10)
+
+- **Selesai:** S1-T1 sampai S1-T6. Ledger eksekusi lokal (tidak di-commit) ada di `.superpowers/sdd/2026-11-10-section-1-setup-experiment/progress.md`.
+- **Berikutnya: S1-T7** (plan `docs/superpowers/plans/2026-11-10-section-1-setup-experiment.md`, Task 7).
+  1. Manusia mengisi `.env` dari `.env.example` (`NEAR_AI_API_KEY`).
+  2. `node spike/consistency.mjs --list-models`, lalu pilih model TEE milik `nearai`, catat sebagai D-9. Kandidat: `z-ai/glm-5.3-flash`, `Qwen/Qwen3.6-35B-A3B-FP8`. Hindari model reasoning karena `max_tokens` 120.
+  3. `node spike/consistency.mjs --model <id>`, isi bagian Analysis di `docs/EXPERIMENT.md` (usulan `threshold_bps`).
+  4. **CHECKPOINT 1:** laporkan ke manusia dan tunggu keputusannya.
+- **Opsional paralel (D-5):** S2 kontrak boleh dimulai. Plan S2 belum ditulis.
+- **Minor tertunda:** ada empat. Yang paling penting untuk S2: batas tepat 25% (`>` ketat) pada aturan M-11 harus dipatok di test kontrak.
