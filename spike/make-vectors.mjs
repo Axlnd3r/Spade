@@ -21,6 +21,12 @@ const cases = [
   ["bytes_2000", padTo(rows(5) + "\n", 2000)],
   ["bytes_2001", padTo(rows(5) + "\n", 2001)],
   ["only_blank_lines", "\n\n \t\n\r\n"],
+  // Form feed and vertical tab are ASCII whitespace in Rust's is_ascii_whitespace()
+  // but are NOT trimmed here (D-2): only ' ', '\t', '\r'.
+  ["ascii_ff_vt_kept", "\u000Ca\u000B\nb\nc\nd\ne"],
+  ["trailing_nbsp_kept", "a \nb\nc\nd\ne  "],
+  // Size is checked before row counts (D-2), so one oversized line is too_large.
+  ["precedence_too_large_over_rows", "x".repeat(2001)],
   ["dataset_n01", dataset("normal/n01.txt")],
   ["dataset_n16_cjk", dataset("normal/n16.txt")],
   ["dataset_a03_adversarial", dataset("adversarial/a03.txt")],

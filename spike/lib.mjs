@@ -146,7 +146,55 @@ export function summarize(records, thresholdsBps = THRESHOLDS_BPS) {
     timeouts: records.filter((r) => r.error === "timeout").length,
     httpErrors: records.filter((r) => typeof r.error === "string" && r.error.startsWith("http_")).length,
   };
-  return { byCategory, latency };
+  const byError = {};
+  for (const r of records) if (r.error) byError[r.error] = (byError[r.error] ?? 0) + 1;
+  const calls = {
+    total: records.length,
+    failed: records.filter((r) => r.error).length,
+    byError,
+    retried: records.filter((r) => (r.attempts ?? 1) > 1).length,
+  };
+  return { byCategory, latency, calls };
+}
+
+export function parseRunOptions({ seed, concurrency }) {
+  if (!/^\d+$/.test(String(seed))) throw new Error(`--seed must be a non-negative integer, got "${seed}"`);
+  if (!/^[1-4]$/.test(String(concurrency))) throw new Error(`--concurrency must be 1..4, got "${concurrency}"`);
+  return { seed: Number(seed), concurrency: Number(concurrency) };
+}
+
+export function classifyStatus(status) {
+  if (status >= 200 && status < 300) return "ok";
+  if (status === 401 || status === 403) return "fatal";
+  if (status === 429 || status >= 500) return "retry";
+  return "fail";
+}
+
+export function readCompletion(data) {
+  const choice = data?.choices?.[0];
+  const content = choice?.message?.content ?? null;
+  return {
+    ok: typeof content === "string",
+    content,
+    finishReason: choice?.finish_reason ?? null,
+    chatId: data?.id ?? null,
+  };
+}
+
+const GEN_START = "<!-- generated:start -->";
+const GEN_END = "<!-- generated:end -->";
+
+export function mergeGenerated(existing, generated) {
+  const block = `${GEN_START}\n${generated.trimEnd()}\n${GEN_END}`;
+  if (existing == null) {
+    return `${block}\n\n## Analysis\n\n_Written by hand after each run; the runner never touches this section._\n`;
+  }
+  const start = existing.indexOf(GEN_START);
+  const end = existing.indexOf(GEN_END);
+  if (start < 0 || end < start) {
+    throw new Error("docs/EXPERIMENT.md has no generated:start/end markers; refusing to overwrite it");
+  }
+  return existing.slice(0, start) + block + existing.slice(end + GEN_END.length);
 }
 
 function percentile(values, q) {
@@ -169,7 +217,10 @@ export function renderExperimentMd(summary, meta) {
     `- Date: ${meta.date}`,
     `- Seed: ${meta.seed}`,
     `- Calls: ${meta.runs}`,
-    "- Method: each dataset is appraised in its original order and in 3 random permutations; each (original, permutation) pair counts as one challenge.",
+    `- Prompt sha256: \`${meta.promptSha256}\``,
+    `- Commit: \`${meta.commit}\``,
+    `- Concurrency: ${meta.concurrency}`,
+    "- Method: each dataset is appraised in its original order and in 3 random permutations; each (original, permutation) pair counts as one challenge. Percentiles use the nearest-rank method. `temperature: 0` reduces but does not remove run-to-run variation.",
     "",
     "## Catch rate per threshold",
     "",
@@ -198,6 +249,13 @@ export function renderExperimentMd(summary, meta) {
     `- Max: ${summary.latency.maxMs} ms`,
     `- Timeouts: ${summary.latency.timeouts}`,
     `- HTTP errors: ${summary.latency.httpErrors}`,
+    "",
+    "## Calls",
+    "",
+    `- Failed calls: ${summary.calls.failed} of ${summary.calls.total} (${
+      Object.entries(summary.calls.byError).sort(([a], [b]) => a.localeCompare(b)).map(([k, n]) => `${k} ${n}`).join(", ") || "none"
+    })`,
+    `- Calls retried: ${summary.calls.retried}`,
     "",
   ];
   return lines.join("\n");

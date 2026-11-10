@@ -10,7 +10,8 @@ const vectors = JSON.parse(
 test("vectors cover the review-focus cases and every limit boundary", () => {
   const names = vectors.map((v) => v.name);
   for (const n of ["crlf", "edge_whitespace", "non_ascii_whitespace_kept", "utf8_sort_order", "duplicate_lines",
-    "rows_4", "rows_5", "rows_100", "rows_101", "bytes_2000", "bytes_2001", "only_blank_lines"]) {
+    "rows_4", "rows_5", "rows_100", "rows_101", "bytes_2000", "bytes_2001", "only_blank_lines",
+    "ascii_ff_vt_kept", "trailing_nbsp_kept", "precedence_too_large_over_rows"]) {
     assert.ok(names.includes(n), `missing vector ${n}`);
   }
 });

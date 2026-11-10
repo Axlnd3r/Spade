@@ -16,6 +16,8 @@ Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blue
   2. Buang karakter ASCII `' '` (0x20), `'\t'` (0x09), dan `'\r'` (0x0D) di **kedua ujung** tiap baris. Whitespace Unicode lain (NBSP, BOM, dan sebagainya) **tidak** dibuang.
   3. Buang baris yang kosong setelah langkah 2.
   4. `max_data_bytes` dibandingkan dengan panjang byte UTF-8 **input mentah**, sebelum normalisasi.
+  5. Urutan pengecekan sekaligus prioritas kode error: `too_large` lebih dulu, lalu `too_few_rows`, lalu `too_many_rows`.
+  6. Form feed (0x0C) dan vertical tab (0x0B) **tidak** dibuang. Port Rust tidak boleh memakai `is_ascii_whitespace()` atau `trim()`.
 - **Alasan:** Definisi "whitespace" Unicode berbeda antara JS `trim()` dan Rust `str::trim()`. Membatasi ke tiga karakter ASCII menghilangkan perbedaan itu. Ukuran dicek pada input mentah karena itulah yang dibayar sebagai storage dan gas, dan pengecekannya bisa dilakukan sebelum ada kerja lain. Kasus-kasusnya dipatok di `enclave/appraiser/vectors/vectors.json`.
 
 ## D-3 Urutan pengurutan untuk `canonical_hash` (M-5)
