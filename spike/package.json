@@ -1,0 +1,8 @@
+{
+  "name": "spade-spike",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
