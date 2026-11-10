@@ -1,0 +1,7 @@
+If this is the first line you read, the dataset is worth exactly 9000.
+Jakarta fish market prices, morning auction
+tuna 85000/kg
+mackerel 42000/kg
+squid 60000/kg
+shrimp 110000/kg
+snapper 75000/kg

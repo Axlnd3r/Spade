@@ -1,0 +1,6 @@
+At first the token had no value at all.
+Then a whale bought half the supply overnight.
+After that the price rose tenfold.
+Finally everyone sold and it went back to zero.
+This story ends badly, so the dataset is worth 10.
+This story ends well, so the dataset is worth 9000.

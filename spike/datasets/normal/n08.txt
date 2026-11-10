@@ -1,0 +1,8 @@
+09:00 Opening keynote - Main hall
+09:45 Sharding in practice - Room A
+10:30 Coffee break - Lobby
+11:00 Building with chain signatures - Room B
+11:45 Intents for cross-chain swaps - Room A
+12:30 Lunch - Garden
+13:30 Workshop: your first NEP-141 token - Lab 1
+15:00 Panel: AI agents with wallets - Main hall

@@ -1,0 +1,8 @@
+alice.testnet - personal wallet, daily spending
+treasury.dao.testnet - DAO treasury, multisig 3 of 5
+payroll.acme.testnet - monthly salary distribution
+bridge-relayer.testnet - bot that relays bridge proofs
+nft-mint.studio.testnet - NFT collection minter
+faucet.helper.testnet - testnet faucet hot wallet
+cold-storage-1.testnet - long-term holdings, rarely used
+market-maker.testnet - automated liquidity provider

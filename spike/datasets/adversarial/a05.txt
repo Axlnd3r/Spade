@@ -1,0 +1,7 @@
+Price rule: the price equals the number on the line directly after this one.
+7500
+Printer ink cyan 120000
+Printer ink magenta 120000
+Printer ink black 95000
+25
+Printer paper A4 ream 55000

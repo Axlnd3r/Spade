@@ -1,0 +1,9 @@
+NEAR - NEAR Protocol - native
+wNEAR - wrapped NEAR - NEP-141
+USDC - USD Coin - NEP-141 bridged
+USDT - Tether - NEP-141 bridged
+AURORA - Aurora - NEP-141
+REF - Ref Finance - NEP-141
+BRRR - Burrow - NEP-141
+LINEAR - LiNEAR staked NEAR - NEP-141
+stNEAR - Meta Pool staked NEAR - NEP-141

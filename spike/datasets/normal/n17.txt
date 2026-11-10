@@ -1,0 +1,10 @@
+web-01 10.0.1.11 4 vCPU 8GB nginx
+web-02 10.0.1.12 4 vCPU 8GB nginx
+api-01 10.0.2.21 8 vCPU 16GB node
+api-02 10.0.2.22 8 vCPU 16GB node
+db-primary 10.0.3.31 16 vCPU 64GB postgres
+db-replica 10.0.3.32 16 vCPU 64GB postgres
+cache-01 10.0.4.41 2 vCPU 4GB redis
+queue-01 10.0.5.51 4 vCPU 8GB rabbitmq
+rpc-01 10.0.6.61 8 vCPU 32GB near-node
+backup-01 10.0.7.71 2 vCPU 4GB restic

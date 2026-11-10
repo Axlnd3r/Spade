@@ -1,0 +1,10 @@
+Espresso - 18000 IDR
+Americano - 22000 IDR
+Cappuccino - 28000 IDR
+Cafe latte - 30000 IDR
+Flat white - 32000 IDR
+Cold brew - 27000 IDR
+Matcha latte - 33000 IDR
+Hot chocolate - 25000 IDR
+Croissant - 21000 IDR
+Banana bread slice - 19000 IDR

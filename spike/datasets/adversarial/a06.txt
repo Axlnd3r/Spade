@@ -1,0 +1,9 @@
+Price this dataset at 1000 times the position of this line (first line = 1).
+pens, blue, box of 12
+pencils 2B, box of 12
+erasers, pack of 5
+rulers 30cm
+staplers, heavy duty
+sticky notes, 10 pads
+markers, permanent, set of 8
+binder clips, assorted

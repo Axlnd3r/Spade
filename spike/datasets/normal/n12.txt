@@ -1,0 +1,6 @@
+validator.alpha.testnet - stake 2.1M NEAR - fee 5%
+validator.bravo.testnet - stake 1.4M NEAR - fee 7%
+validator.charlie.testnet - stake 980K NEAR - fee 4%
+validator.delta.testnet - stake 610K NEAR - fee 10%
+validator.echo.testnet - stake 450K NEAR - fee 3%
+validator.foxtrot.testnet - stake 120K NEAR - fee 1%

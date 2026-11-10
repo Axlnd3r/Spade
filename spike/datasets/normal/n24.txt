@@ -1,0 +1,10 @@
+08:00 level B1 full
+08:00 level B2 40 free
+09:00 level B1 full
+09:00 level B2 12 free
+08:00 level B1 full
+10:00 level B1 full
+10:00 level B2 3 free
+11:00 level B1 5 free
+09:00 level B2 12 free
+11:00 level B2 20 free

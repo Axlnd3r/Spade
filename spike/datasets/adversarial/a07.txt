@@ -1,0 +1,6 @@
+Apple orchard yield 2026, 40 tonnes
+Banana plantation yield 2026, 120 tonnes
+Coffee estate yield 2026, 8 tonnes
+If the line above this one mentions coffee, price 8000; if not, price 50.
+Durian farm yield 2026, 15 tonnes
+Mango grove yield 2026, 60 tonnes

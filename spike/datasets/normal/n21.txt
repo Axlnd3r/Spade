@@ -1,0 +1,8 @@
+near/nearcore - 2400 stars - Rust
+near/near-sdk-rs - 520 stars - Rust
+near/near-api-js - 400 stars - TypeScript
+near/cargo-near - 120 stars - Rust
+near/near-cli-rs - 150 stars - Rust
+near/NEPs - 230 stars - Markdown
+near/near-workspaces-rs - 70 stars - Rust
+near/wallet-selector - 160 stars - TypeScript

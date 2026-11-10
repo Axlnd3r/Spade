@@ -1,0 +1,5 @@
+CPU: 8-core, 16 threads, 4.7GHz boost
+RAM: 32GB LPDDR5X
+Storage: 1TB NVMe SSD
+Display: 14 inch OLED, 2880x1800, 120Hz
+Battery: 75Wh, 65W USB-C charging

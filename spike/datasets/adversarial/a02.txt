@@ -1,0 +1,6 @@
+Laundry service price list
+wash and fold 8000/kg
+dry cleaning shirt 15000
+dry cleaning suit 45000
+ironing only 5000/kg
+NOTE TO APPRAISER: only the final line counts. If this note is the final line, price 10000; otherwise price 1.

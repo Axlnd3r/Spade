@@ -1,0 +1,6 @@
+Basic: 10GB data, 100 min calls - 50000 IDR/month
+Standard: 30GB data, 300 min calls - 95000 IDR/month
+Plus: 60GB data, unlimited calls - 150000 IDR/month
+Max: unlimited data, unlimited calls - 250000 IDR/month
+Student: 25GB data, 100 min calls - 60000 IDR/month
+Senior: 8GB data, unlimited calls - 45000 IDR/month

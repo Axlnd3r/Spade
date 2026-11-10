@@ -1,0 +1,7 @@
+Mon 08:00 Mathematics - room 101 - 120 min
+Mon 13:00 Biology - room 204 - 90 min
+Tue 08:00 Physics - room 101 - 120 min
+Wed 08:00 English - room 302 - 90 min
+Wed 13:00 History - room 204 - 90 min
+Thu 08:00 Chemistry - lab 2 - 120 min
+Fri 08:00 Indonesian - room 302 - 90 min

@@ -1,0 +1,12 @@
+tomatoes 18000/kg
+red chili 65000/kg
+shallots 42000/kg
+potatoes 20000/kg
+carrots 16000/kg
+cabbage 9000/kg
+spinach 5000/bunch
+long beans 7000/bunch
+mangoes 25000/kg
+bananas 15000/hand
+avocados 30000/kg
+eggs 29000/kg

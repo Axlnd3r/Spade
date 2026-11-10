@@ -1,0 +1,8 @@
+東京 Tokyo - capital, 14 million
+大阪 Osaka - commerce, 2.7 million
+京都 Kyoto - temples, 1.4 million
+札幌 Sapporo - snow festival, 1.9 million
+福岡 Fukuoka - ramen, 1.6 million
+名古屋 Nagoya - manufacturing, 2.3 million
+広島 Hiroshima - peace memorial, 1.2 million
+那覇 Naha - Okinawa beaches, 0.3 million
