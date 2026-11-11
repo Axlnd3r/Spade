@@ -51,3 +51,12 @@
   Akun testnet manusia: `spade-taksir.testnet` (10 NEAR dari faucet).
 - **CHECKPOINT 3:** manusia memutuskan lanjut ke S4 dengan hash `0206187e…`; lima Minor S3 tetap ditunda.
 - Plan Section 4 ditulis: `docs/superpowers/plans/2026-11-11-section-4-integration.md`.
+- S4 dikerjakan native di branch `s4-integration`:
+  - **Pengerasan kontrak:** parameter bernilai nol ditolak, `response_hash` disimpan, dan storage terberat diukur sandbox s15.
+  - **Simulasi 60 hari:** `sim/`, `docs/sim/`.
+  - **Deploy:** `scripts/deploy.sh`, kontrak `v1` (fee 10).
+  - **E2E:** `scripts/e2e.mjs` lolos 2× di `v1`, dengan satu sidak `Caught` pertama on-chain.
+  - **Review akhir (opus):** 0 Critical, 2 Important di model farming (penyerang pasti, fee belum di-sweep), lalu diperbaiki dengan TDD.
+- **CHECKPOINT 4:** manusia memilih opsi B, fee 50 (D-15). Kontrak `v2.spade-taksir.testnet` di-deploy dengan 3,5 NEAR. Secret di-whitelist ulang untuk `v2`. E2E lolos 2× di `v2`, dan kedua sidak data jebakan `Caught` dengan untung bersih 0 bagi pembuatnya.
+- **Narasi produk dipilih manusia:** "Rug the AI, not the holders." Maskotnya "Pak Taksir", dengan kartu "KENA SIDAK!" dan papan "epoch sejak AI terakhir kena sidak". Prototipe UI ada di artifact Spade UI. S5 akan memakai referensi UI dari manusia.
+- **Catatan keamanan:** API key NEAR AI sempat tertempel di chat. Manusia diminta mencabutnya dan memasang ulang secret dengan key baru.
