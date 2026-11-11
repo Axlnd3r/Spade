@@ -22,3 +22,8 @@ Angka riil dari testnet dan dari build enclave. Setiap baris memuat tanggal dan 
   - pada kedua run, `a`/`g` terisi dan `h` sama dengan `raw_hash`.
 
 Siapa pun bisa mengulang perintah di atas pada commit yang sama dan mendapat hash yang sama. Hash ini yang dikunci kontrak (`wasm_hash`) dan dipakai untuk mengikat secret.
+
+### Rilis GitHub (2026-11-11)
+
+- Tag `enclave-v1` (pre-release) menunjuk commit `1cb3b42`.
+- **`wasm_url`:** `https://github.com/Axlnd3r/Spade/releases/download/enclave-v1/appraiser.wasm`. URL ini bisa diunduh tanpa login (HTTP 200, 213.917 byte), dan sha256 hasil unduhannya **`0206187e1ba0c53acb5c5e991b1d559c20eafb01d617a387be5a0848c7348ee2`**, sama dengan build reproducible.
