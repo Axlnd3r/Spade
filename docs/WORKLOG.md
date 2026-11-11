@@ -40,4 +40,5 @@
   - `new` menjadi `#[private]`;
   - skenario gas terburuk di 170 TGas: receipt terberat 5,1 TGas.
   Suite akhir: unit 65, sandbox 17, mock 3, semuanya lolos. Clippy bersih. `taksir.wasm` 261.974 byte. Enam temuan Minor ditunda dan dilaporkan di CHECKPOINT 2.
-- **CHECKPOINT 2:** menunggu keputusan manusia.
+- **CHECKPOINT 2:** manusia memilih merge ke `main` (lokal, fast-forward, `048ae46`).
+- Plan Section 3 ditulis: `docs/superpowers/plans/2026-11-11-section-3-enclave.md`. Probe signature NEAR AI: `provider_tee`, dan hash request/respons cocok dengan byte yang dikirim dan diterima.
