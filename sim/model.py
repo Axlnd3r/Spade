@@ -9,7 +9,7 @@ and how much is paid out. Fees and lost stakes are burned on top of it.
 Units are whole TAKSIR. The model uses expected values, not random draws, so
 it gives the same numbers on every run.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass, replace
 
 # P(caught) per challenge, as (normal data, adversarial data), measured with a
 # reordered variant in docs/EXPERIMENT.md (run 2026-11-11). Change these only
@@ -24,11 +24,16 @@ CATCH = {
 # Per appraisal (contract `max_challenges`).
 MAX_CHALLENGES = 3
 
+# NEAR a user pays net per appraise or challenge: storage_fee 0.05 plus the
+# ~0.0011 OutLayer keeps (docs/TESTNET.md, e2e on v1). Gas not included.
+NEAR_PER_OP = 0.0511
+
 GRID = {
     "threshold_bps": [7000, 7500, 8000],
     "budget_ppm": [5, 10, 20, 50],
     "reward_multiplier": [2, 3, 4],
     "challenge_stake": [25, 50, 100],
+    "appraisal_fee": [10, 25, 50],
 }
 
 
@@ -67,6 +72,7 @@ class Day:
     budget_burned: float
     attacker_reward: float
     attacker_net: float
+    attacker_near: float
 
 
 SCENARIOS = {
@@ -88,38 +94,42 @@ def catch_rates(p: Params, s: Scenario) -> tuple[float, float]:
             q_adv if s.catch_adv is None else s.catch_adv)
 
 
-def farm_per_data(p: Params, q: float) -> tuple[float, float]:
-    """(expected reward, expected cost) for one adversarial appraisal.
+def farm_per_data(p: Params, q: float) -> tuple[float, float, float]:
+    """(expected reward, expected TAKSIR cost, expected operations) for one adversarial appraisal.
 
     The attacker appraises its own data, then challenges it one at a time
     until a challenge is caught or `MAX_CHALLENGES` is reached. A caught
     challenge gets its stake back; a survived one burns it. Each challenge is
-    assumed independent with the same q.
+    assumed independent with the same q. q near 1 is the attacker who uses
+    order-dependent data and only challenges once the injection fired (S4 review).
+    Operations are the appraisal plus the challenges made, each paying NEAR_PER_OP.
     """
     reward = p.reward_multiplier * p.challenge_stake
     p_caught = 1 - (1 - q) ** MAX_CHALLENGES
     lost_stakes = sum((1 - q) ** k for k in range(1, MAX_CHALLENGES + 1))
-    return p_caught * reward, p.appraisal_fee + lost_stakes * p.challenge_stake
+    tries = sum((1 - q) ** k for k in range(MAX_CHALLENGES))
+    return p_caught * reward, p.appraisal_fee + lost_stakes * p.challenge_stake, 1 + tries
 
 
 def simulate(p: Params, s: Scenario, days: int = 60) -> list[Day]:
     epochs_per_day = round(24 / p.epoch_hours)
     q_normal, q_adv = catch_rates(p, s)
-    adv_reward, adv_cost = farm_per_data(p, q_adv)
+    adv_reward, adv_cost, adv_ops = farm_per_data(p, q_adv)
     appraisals = s.appraisals_per_day / epochs_per_day
     challenges = appraisals * s.challenges_per_appraisal
 
     supply, treasury, burned_total = p.supply0, p.treasury0, 0.0
     out = []
     for d in range(1, days + 1):
-        t = dict(budget=0.0, rewards=0.0, burned=0.0, adv_reward=0.0, adv_net=0.0)
+        t = dict(budget=0.0, rewards=0.0, burned=0.0, adv_reward=0.0, adv_net=0.0, adv_near=0.0)
         for _ in range(epochs_per_day):
             budget = treasury * p.budget_ppm / 1_000_000
             left = budget
             burn = appraisals * p.appraisal_fee
 
-            if s.farming and adv_reward > 0:
-                # The attacker challenges first in the epoch and keeps going until the budget is gone.
+            if s.farming and adv_reward > adv_cost:
+                # A profitable attacker challenges first in the epoch and keeps going until the budget
+                # is gone; one that would lose per data stays out.
                 taken = left
                 n_data = taken / adv_reward
                 left -= taken
@@ -127,6 +137,7 @@ def simulate(p: Params, s: Scenario, days: int = 60) -> list[Day]:
                 burn += cost
                 t["adv_reward"] += taken
                 t["adv_net"] += taken - cost
+                t["adv_near"] += n_data * adv_ops * NEAR_PER_OP
 
             caught = q_normal * challenges
             paid = min(caught * p.reward_multiplier * p.challenge_stake, left)
@@ -142,7 +153,7 @@ def simulate(p: Params, s: Scenario, days: int = 60) -> list[Day]:
             t["rewards"] += budget - left
             t["burned"] += left
         out.append(Day(d, supply, treasury, burned_total, t["budget"], t["rewards"], t["burned"],
-                       t["adv_reward"], t["adv_net"]))
+                       t["adv_reward"], t["adv_net"], t["adv_near"]))
     return out
 
 
@@ -155,7 +166,8 @@ def honest_paid_ratio(p: Params, s: Scenario, days: list[Day]) -> float:
 
 
 def sweep(grid: dict[str, list], days: int = 60, epoch_hours: float = 24.0) -> list[dict]:
-    """One row per combination: the normal scenario's end state and the farming attacker's daily net."""
+    """One row per combination: the normal scenario's end state, the farming attacker's daily net
+    at the measured q and at q = 1 (the sure attacker), and what honest catchers get under farming."""
     import itertools
 
     rows = []
@@ -164,6 +176,7 @@ def sweep(grid: dict[str, list], days: int = 60, epoch_hours: float = 24.0) -> l
         normal_days = simulate(p, SCENARIOS["normal"], days)
         normal = normal_days[-1]
         farmed = simulate(p, SCENARIOS["farming"], days)
+        sure = simulate(p, replace(SCENARIOS["farming"], catch_adv=1.0), days)
         rows.append(dict(
             zip(grid.keys(), values),
             supply_end=normal.supply,
@@ -173,5 +186,8 @@ def sweep(grid: dict[str, list], days: int = 60, epoch_hours: float = 24.0) -> l
             breakeven=breakeven_q(p),
             q_normal=CATCH[p.threshold_bps][0],
             honest_paid_ratio=honest_paid_ratio(p, SCENARIOS["normal"], normal_days),
+            attacker_net_per_day_q1=sum(d.attacker_net for d in sure) / days,
+            attacker_near_per_day_q1=sum(d.attacker_near for d in sure) / days,
+            honest_paid_ratio_farming=honest_paid_ratio(p, SCENARIOS["farming"], farmed),
         ))
     return rows

@@ -22,11 +22,38 @@ Model ini tidak memakai angka acak; tingkat tertangkap diambil dari `docs/EXPERI
 
 ## Serangan farming
 
-Penyerang menaksir data jahil miliknya sendiri, lalu menyidaknya satu per satu sampai tertangkap (paling banyak 3 kali per data). Ia melakukannya lebih dulu dari penantang lain dalam setiap epoch, sampai budget epoch habis.
+Penyerang menaksir data jahil miliknya sendiri, lalu menyidaknya satu per satu sampai tertangkap (paling banyak 3 kali per data). Ia melakukannya lebih dulu dari penantang lain dalam setiap epoch, sampai budget epoch habis. Penyerang yang rasional tidak ikut kalau rata-rata ia rugi per data.
 
-- Per data: hadiah harapan 42 TAKSIR, biaya harapan 34 TAKSIR (fee + stake yang hangus).
+- **Rata-rata data jahil** (q 46,7%, rata-rata semua dataset jahil di EXPERIMENT): hadiah harapan 42 TAKSIR, biaya 34 TAKSIR per data.
+- **Penyerang pasti** (q 100%): penyerang memakai data yang urutannya menentukan harga (kelas a02, a04-a06, tertangkap 3/3 di EXPERIMENT) dan hanya menyidak setelah harganya melonjak. Hadiahnya penuh 50 TAKSIR, biayanya hanya fee 10 TAKSIR. Jadi **fee adalah batas kedua**: kalau fee >= multiplier x stake, farming tidak pernah untung.
 - Hadiah penyerang per epoch tidak pernah melebihi budget epoch (`test_farming_capped_by_budget`).
-- Kas turun persis sama dengan atau tanpa penyerang. Yang berubah adalah ke mana budget itu pergi: dibayarkan ke penyerang, bukan dibakar atau dibayarkan ke penantang jujur (`test_farming_drains_treasury_the_same_and_displaces_honest_rewards`).
+- Kas turun persis sama dengan atau tanpa penyerang. Yang berubah adalah ke mana budget itu pergi: dibayarkan ke penyerang, bukan dibakar.
+- **Penantang jujur tersingkir.** Selama penyerang untung, ia menghabiskan budget lebih dulu, sehingga tangkapan jujur di epoch itu dapat hadiah 0 (`test_honest_rewards_crowded_out_by_farming`).
+- Biaya NEAR per operasi (taksir atau sidak) sekitar 0,0511 NEAR. Ini rem nyata di luar TAKSIR.
+
+### Farming dengan parameter terpilih, epoch 24 jam (arah mainnet)
+
+| Penyerang | q | Untung TAKSIR/hari | Biaya NEAR/hari | Hadiah jujur terbayar |
+|---|---:|---:|---:|---:|
+| rata-rata data jahil | 0.467 | 58 | 1.0 | 0,0% |
+| data jahil terbaik | 0.930 | 229 | 0.6 | 0,0% |
+| penyerang pasti | 1.000 | 240 | 0.6 | 0,0% |
+
+### Farming dengan parameter terpilih, epoch 10 menit (testnet)
+
+| Penyerang | q | Untung TAKSIR/hari | Biaya NEAR/hari | Hadiah jujur terbayar |
+|---|---:|---:|---:|---:|
+| rata-rata data jahil | 0.467 | 8.188 | 143.4 | 0,0% |
+| data jahil terbaik | 0.930 | 32.230 | 89.7 | 0,0% |
+| penyerang pasti | 1.000 | 33.824 | 86.4 | 0,0% |
+
+### Pengaruh fee (parameter lain tetap), penyerang pasti
+
+| Fee | Untung TAKSIR/hari (24 jam) | Untung TAKSIR/hari (10 menit) | Biaya NEAR/hari (10 menit) |
+|---:|---:|---:|---:|
+| 10 | 240 | 33.824 | 86.4 |
+| 25 | 150 | 21.140 | 86.4 |
+| 50 | 0 | 0 | 0.0 |
 
 ## Skenario, epoch 24 jam (arah mainnet)
 
@@ -48,37 +75,37 @@ Penyerang menaksir data jahil miliknya sendiri, lalu menyidaknya satu per satu s
 
 ## Sweep, epoch 24 jam (arah mainnet): 10 kombinasi teratas
 
-Dari 108 kombinasi, 108 memenuhi syarat q_normal < titik impas. Urutannya: hadiah penantang jujur yang terbayar penuh lebih dulu, lalu untung penyerang per hari yang paling kecil.
+Dari 324 kombinasi, 324 memenuhi syarat q_normal < titik impas. Urutannya: hadiah penantang jujur terbayar penuh (tanpa farming) lebih dulu, lalu untung penyerang pasti per hari yang paling kecil. Kolom 'Jujur saat farming' adalah bagian hadiah jujur yang tetap terbayar saat ada penyerang.
 
-| Ambang | ppm | Mult | Stake | Titik impas | Hadiah jujur terbayar | Supply akhir | Kas akhir | Untung penyerang/hari |
-|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 7500 | 5 | 2 | 25 | 33,3% | 100,0% | 99.899.503 | 59.982.003 | 58 |
-| 8000 | 5 | 2 | 25 | 33,3% | 100,0% | 99.889.603 | 59.982.003 | 58 |
-| 8000 | 5 | 2 | 50 | 33,3% | 100,0% | 99.827.203 | 59.982.003 | 93 |
-| 7000 | 10 | 2 | 25 | 33,3% | 100,0% | 99.894.111 | 59.964.011 | 116 |
-| 7500 | 10 | 2 | 25 | 33,3% | 100,0% | 99.881.511 | 59.964.011 | 116 |
-| 8000 | 10 | 2 | 25 | 33,3% | 100,0% | 99.871.611 | 59.964.011 | 116 |
-| 8000 | 5 | 3 | 25 | 25,0% | 100,0% | 99.893.803 | 59.982.003 | 139 |
-| 8000 | 5 | 4 | 25 | 20,0% | 100,0% | 99.898.003 | 59.982.003 | 179 |
-| 7500 | 10 | 2 | 50 | 33,3% | 100,0% | 99.829.011 | 59.964.011 | 187 |
-| 8000 | 10 | 2 | 50 | 33,3% | 100,0% | 99.809.211 | 59.964.011 | 187 |
+| Ambang | ppm | Mult | Stake | Fee | Titik impas | Jujur terbayar | Jujur saat farming | Penyerang rata-rata/hari | Penyerang pasti/hari | NEAR penyerang pasti/hari |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 7000 | 10 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7000 | 20 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7000 | 50 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7500 | 5 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7500 | 10 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7500 | 20 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7500 | 50 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 8000 | 5 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 8000 | 10 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 8000 | 20 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
 
 ## Sweep, epoch 10 menit (testnet): 10 kombinasi teratas
 
-Dari 108 kombinasi, 108 memenuhi syarat q_normal < titik impas. Urutannya: hadiah penantang jujur yang terbayar penuh lebih dulu, lalu untung penyerang per hari yang paling kecil.
+Dari 324 kombinasi, 324 memenuhi syarat q_normal < titik impas. Urutannya: hadiah penantang jujur terbayar penuh (tanpa farming) lebih dulu, lalu untung penyerang pasti per hari yang paling kecil. Kolom 'Jujur saat farming' adalah bagian hadiah jujur yang tetap terbayar saat ada penyerang.
 
-| Ambang | ppm | Mult | Stake | Titik impas | Hadiah jujur terbayar | Supply akhir | Kas akhir | Untung penyerang/hari |
-|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 7000 | 5 | 2 | 25 | 33,3% | 100,0% | 97.393.283 | 57.463.183 | 8.188 |
-| 7500 | 5 | 2 | 25 | 33,3% | 100,0% | 97.380.683 | 57.463.183 | 8.188 |
-| 8000 | 5 | 2 | 25 | 33,3% | 100,0% | 97.370.783 | 57.463.183 | 8.188 |
-| 7000 | 5 | 2 | 50 | 33,3% | 100,0% | 97.353.383 | 57.463.183 | 13.170 |
-| 7500 | 5 | 2 | 50 | 33,3% | 100,0% | 97.328.183 | 57.463.183 | 13.170 |
-| 8000 | 5 | 2 | 50 | 33,3% | 100,0% | 97.308.383 | 57.463.183 | 13.170 |
-| 7000 | 5 | 2 | 100 | 33,3% | 100,0% | 97.273.583 | 57.463.183 | 15.661 |
-| 7500 | 5 | 2 | 100 | 33,3% | 100,0% | 97.223.183 | 57.463.183 | 15.661 |
-| 8000 | 5 | 2 | 100 | 33,3% | 100,0% | 97.183.583 | 57.463.183 | 15.661 |
-| 7000 | 10 | 2 | 25 | 33,3% | 100,0% | 94.963.712 | 55.033.612 | 16.029 |
+| Ambang | ppm | Mult | Stake | Fee | Titik impas | Jujur terbayar | Jujur saat farming | Penyerang rata-rata/hari | Penyerang pasti/hari | NEAR penyerang pasti/hari |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 7000 | 5 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7000 | 10 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7000 | 20 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7000 | 50 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7500 | 5 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7500 | 10 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7500 | 20 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 7500 | 50 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 8000 | 5 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
+| 8000 | 10 | 2 | 25 | 50 | 33,3% | 100,0% | 100,0% | 0 | 0 | 0.0 |
 
 ## Grafik
 

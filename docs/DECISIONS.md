@@ -164,21 +164,39 @@ Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blue
   - Nilai awal `exec_deposit` di S4: **0,0071 NEAR**, yaitu estimasi 0,007001 NEAR ditambah margin. Sisanya dikembalikan OutLayer ke `payer_account_id`.
 - **Alasan:** bentuk Text sudah diuji di unit test kontrak dan dibuktikan on-chain.
 
-## D-15 Parameter final testnet (S4-T2, 2026-11-11; menunggu CHECKPOINT 4)
+## D-15 Parameter final testnet (S4-T2, 2026-11-11; direvisi setelah review S4; menunggu CHECKPOINT 4)
 - **Sumber angka:** `docs/sim/summary.md` (`python sim/simulate.py`), model nilai harapan 60 hari. Tingkat tertangkapnya diambil dari `docs/EXPERIMENT.md`.
-- **Temuan utama simulasi:** data jahil tertangkap 46,7%, di atas titik impas untuk setiap multiplier dalam grid (maksimal 33,3%). Akibatnya, menyidak data sendiri selalu menguntungkan secara harapan, dan satu-satunya batas adalah budget per epoch. Kas turun persis satu budget per epoch, dengan atau tanpa penyerang. Penyerang hanya mengalihkan budget yang seharusnya dibakar atau dibayarkan ke penantang jujur. Karena itu, parameter dipilih untuk memperkecil bagian budget yang bisa diambil penyerang, tanpa memotong hadiah penantang jujur.
-- **Nilai** (`scripts/params.testnet.json`, argumen `new`):
+- **Temuan simulasi (setelah review S4):**
+  - **Penyerang pasti.** Rata-rata data jahil tertangkap 46,7%, tetapi itu rata-rata. Data yang urutannya menentukan harga (kelas a02, a04–a06) tertangkap 3/3. Penyerang juga melihat harga taksiran sebelum memasang stake, sehingga ia cukup menyidak data yang injeksinya berhasil. Penyerang seperti ini tertangkap hampir 100%. Untung bersih per data = `multiplier × stake − appraisal_fee`.
+  - **Dua batas farming.** Batas pertama adalah budget per epoch: penyerang tidak bisa mengambil lebih dari budget. Batas kedua adalah fee: kalau `appraisal_fee ≥ multiplier × stake`, farming tidak pernah untung, bahkan bagi penyerang pasti.
+  - **Penantang jujur tersingkir.** Selama farming untung, penyerang menghabiskan budget lebih dulu, sehingga tangkapan jujur di epoch itu tidak mendapat hadiah.
+  - **Kas tidak berubah.** Kas turun satu budget per epoch, dengan atau tanpa penyerang. Farming hanya mengalihkan budget dari dibakar menjadi dibayarkan ke penyerang.
+- **Dua opsi** (sama di semua parameter kecuali fee; ambang 7500 (D-10), budget 5 ppm per epoch, multiplier 2, stake 25):
+
+| | **A: fee 10** (v1 yang sudah aktif) | **B: fee 50** (rekomendasi) |
+|---|---|---|
+| Untung penyerang pasti per hari, testnet (epoch 10 menit) | 33.824 TAKSIR, biaya ~86 NEAR | **0**: farming tidak pernah untung |
+| Untung penyerang pasti per hari, epoch 24 jam | 240 TAKSIR | **0** |
+| Hadiah penantang jujur saat ada farming | 0% | **100%** |
+| Biaya satu taksiran | 10 TAKSIR (faucet 500 = 50 taksiran) | 50 TAKSIR (faucet 500 = 10 taksiran), semuanya dibakar |
+| Siapa yang membuat data jebakan | Penyerang yang memanen hadiah sendiri | Hanya orang iseng. Jebakannya menjadi umpan yang dibayar pembuatnya dan dipanen penyidak lain |
+| Perlu deploy ulang | Tidak | Ya, `bash scripts/deploy.sh 2` lalu secret di-whitelist ulang untuk `v2` |
+
+- **Rekomendasi: B.**
+  - Narasi "Rug the AI, not the holders" tetap utuh. Yang dibayar adalah orang yang menangkap jebakan orang lain, bukan orang yang memanen jebakannya sendiri.
+  - Setiap taksiran membakar 5× lebih banyak token.
+  - Biayanya: lebih sedikit taksiran per akun dari faucet.
+- **Nilai parameter lain:**
 
 | Parameter | Nilai | Alasan |
 |---|---|---|
 | `threshold_bps` | 7500 | D-10 (keputusan manusia). |
-| `budget_ppm` | 5 per epoch | Nilai terkecil di grid yang tetap membayar penuh hadiah penantang jujur pada skenario normal. Untung farming testnet turun dari 104.064 (ppm 20, mult 4, stake 50) menjadi 8.188 TAKSIR per hari. Kas testnet tersisa 57,46 jt setelah 60 hari (epoch 10 menit). |
-| `reward_multiplier` | 2 | Titik impas naik menjadi 33,3%. Data biasa (10,0%) tetap jauh di bawahnya, sedangkan data jahil (46,7%) tetap di atasnya, sehingga menyidak data jahil sungguhan tetap layak. |
-| `challenge_stake` | 25 TAKSIR | Dengan stake kecil, fee menjadi porsi biaya yang lebih besar bagi penyerang. Hadiah harapan per data jahil 42 TAKSIR, biayanya 34 TAKSIR. |
-| `appraisal_fee` | 10 TAKSIR | Tetap seperti blueprint. Faucet 500 cukup untuk 50 taksiran. |
+| `budget_ppm` | 5 per epoch | Nilai terkecil di grid yang tetap membayar penuh hadiah penantang jujur pada skenario normal. Pada opsi A, ini juga batas utama farming. Kas testnet tersisa 57,46 jt setelah 60 hari (epoch 10 menit). |
+| `reward_multiplier` | 2 | Titik impas naik menjadi 33,3%. Data biasa (10,0%) tetap jauh di bawahnya, sehingga menyidak asal-asalan merugi. |
+| `challenge_stake` | 25 TAKSIR | Hadiah tangkapan 50 TAKSIR. Pada opsi B, nilai ini sama dengan fee. |
 | `max_challenges` | 3 | Blueprint. |
 | `faucet_amount` | 500 TAKSIR | Blueprint. |
-| `epoch_ms` | 600.000 (10 menit) | Blueprint 2.4 untuk testnet. Arah mainnet adalah 86.400.000; simulasinya ada di summary. |
+| `epoch_ms` | 600.000 (10 menit) | Blueprint 2.4 untuk testnet. Arah mainnet adalah 86.400.000. |
 | `challenge_window_ms` | 3.600.000 (1 jam) | Blueprint. |
 | `min_rows` / `max_rows` / `max_data_bytes` | 5 / 100 / 2.000 | Blueprint. Gas terburuk sudah diuji di s14 dan storage di s15. |
 | `price_min` / `price_max` | 1 / 10.000 | Sama dengan clamp di enclave. |
@@ -186,4 +204,7 @@ Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blue
 | `storage_fee` | 0,05 NEAR | s15: taksiran terburuk 3.177 byte (0,0318 NEAR), sidak terburuk 2.598 byte. |
 | `outlayer_id`, `wasm_url`, `wasm_hash`, `secrets_profile`, `secrets_owner` | `outlayer.testnet`, rilis `enclave-v1`, `0206187e…8ee2`, `taksir`, `spade-taksir.testnet` | S3 dan `docs/TESTNET.md`. |
 
-- **Status:** dipakai untuk deploy `v1.spade-taksir.testnet`. Parameter ini baru dianggap terkunci setelah manusia menyetujuinya di CHECKPOINT 4. Kalau diubah, deploy diulang ke `v2`.
+- **Status:**
+  - `v1.spade-taksir.testnet` berjalan dengan opsi A.
+  - Parameter baru dianggap terkunci setelah manusia memilih A atau B di CHECKPOINT 4.
+  - Kalau B dipilih, `scripts/params.testnet.json` diubah ke `appraisal_fee` = 50 TAKSIR, lalu deploy ke `v2`.

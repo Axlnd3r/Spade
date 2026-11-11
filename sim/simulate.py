@@ -5,13 +5,20 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from charts import line_chart  # noqa: E402
-from model import CATCH, GRID, SCENARIOS, Params, breakeven_q, farm_per_data, simulate, sweep  # noqa: E402
+from dataclasses import replace  # noqa: E402
+
+from model import (CATCH, GRID, SCENARIOS, Params, breakeven_q, farm_per_data, honest_paid_ratio,  # noqa: E402
+                   simulate, sweep)
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "docs", "sim")
 DAYS = 60
 # The parameters Task 3 picks (D-15). Testnet runs 10-minute epochs; mainnet would run 24-hour ones.
 CHOSEN = Params(challenge_stake=25, reward_multiplier=2, budget_ppm=5)
 EPOCHS = {"24 jam (arah mainnet)": 24.0, "10 menit (testnet)": 1 / 6}
+# P(caught) for the farming attacker: the experiment's average over all adversarial data, the
+# a02/a04-a06 class it can pick, and the sure attacker who only challenges after the injection fired.
+ATTACKER_Q = {"rata-rata data jahil": None, "data jahil terbaik": 0.93, "penyerang pasti": 1.0}
+FEES = [10, 25, 50]
 
 
 def n(v: float) -> str:
@@ -33,6 +40,18 @@ def scenario_table(p: Params) -> list[str]:
     return rows
 
 
+def farming_table(p: Params) -> list[str]:
+    rows = ["| Penyerang | q | Untung TAKSIR/hari | Biaya NEAR/hari | Hadiah jujur terbayar |",
+            "|---|---:|---:|---:|---:|"]
+    for label, q in ATTACKER_Q.items():
+        s = replace(SCENARIOS["farming"], catch_adv=q)
+        days = simulate(p, s, DAYS)
+        q_used = CATCH[p.threshold_bps][1] if q is None else q
+        rows.append(f"| {label} | {q_used:.3f} | {n(sum(d.attacker_net for d in days) / DAYS)} | "
+                    f"{sum(d.attacker_near for d in days) / DAYS:,.1f} | {pct(honest_paid_ratio(p, s, days))} |")
+    return rows
+
+
 def main() -> None:
     os.makedirs(OUT, exist_ok=True)
     runs = {name: simulate(CHOSEN, s, DAYS) for name, s in SCENARIOS.items()}
@@ -49,7 +68,8 @@ def main() -> None:
 
     p = CHOSEN
     q_normal, q_adv = CATCH[p.threshold_bps]
-    reward, cost = farm_per_data(p, q_adv)
+    reward, cost, _ = farm_per_data(p, q_adv)
+    sure_reward, sure_cost, _ = farm_per_data(p, 1.0)
     lines = [
         "# Simulasi TAKSIR 60 hari",
         "",
@@ -78,15 +98,36 @@ def main() -> None:
         "",
         "Penyerang menaksir data jahil miliknya sendiri, lalu menyidaknya satu per satu sampai tertangkap"
         " (paling banyak 3 kali per data). Ia melakukannya lebih dulu dari penantang lain dalam setiap epoch,"
-        " sampai budget epoch habis.",
+        " sampai budget epoch habis. Penyerang yang rasional tidak ikut kalau rata-rata ia rugi per data.",
         "",
-        f"- Per data: hadiah harapan {n(reward)} TAKSIR, biaya harapan {n(cost)} TAKSIR (fee + stake yang hangus).",
+        f"- **Rata-rata data jahil** (q {pct(q_adv)}, rata-rata semua dataset jahil di EXPERIMENT): hadiah harapan"
+        f" {n(reward)} TAKSIR, biaya {n(cost)} TAKSIR per data.",
+        "- **Penyerang pasti** (q 100%): penyerang memakai data yang urutannya menentukan harga (kelas a02, a04-a06,"
+        " tertangkap 3/3 di EXPERIMENT) dan hanya menyidak setelah harganya melonjak. Hadiahnya penuh"
+        f" {n(sure_reward)} TAKSIR, biayanya hanya fee {n(sure_cost)} TAKSIR. Jadi **fee adalah batas kedua**:"
+        " kalau fee >= multiplier x stake, farming tidak pernah untung.",
         "- Hadiah penyerang per epoch tidak pernah melebihi budget epoch (`test_farming_capped_by_budget`).",
         "- Kas turun persis sama dengan atau tanpa penyerang. Yang berubah adalah ke mana budget itu pergi: dibayarkan"
-        " ke penyerang, bukan dibakar atau dibayarkan ke penantang jujur"
-        " (`test_farming_drains_treasury_the_same_and_displaces_honest_rewards`).",
+        " ke penyerang, bukan dibakar.",
+        "- **Penantang jujur tersingkir.** Selama penyerang untung, ia menghabiskan budget lebih dulu, sehingga tangkapan"
+        " jujur di epoch itu dapat hadiah 0 (`test_honest_rewards_crowded_out_by_farming`).",
+        "- Biaya NEAR per operasi (taksir atau sidak) sekitar 0,0511 NEAR. Ini rem nyata di luar TAKSIR.",
         "",
     ]
+    for label, hours in EPOCHS.items():
+        lines += [f"### Farming dengan parameter terpilih, epoch {label}", ""] + farming_table(
+            replace(p, epoch_hours=hours)) + [""]
+    lines += ["### Pengaruh fee (parameter lain tetap), penyerang pasti", "",
+              "| Fee | Untung TAKSIR/hari (24 jam) | Untung TAKSIR/hari (10 menit) | Biaya NEAR/hari (10 menit) |",
+              "|---:|---:|---:|---:|"]
+    for fee in FEES:
+        cells = []
+        for hours in EPOCHS.values():
+            days = simulate(replace(p, appraisal_fee=fee, epoch_hours=hours),
+                            replace(SCENARIOS["farming"], catch_adv=1.0), DAYS)
+            cells.append((sum(d.attacker_net for d in days) / DAYS, sum(d.attacker_near for d in days) / DAYS))
+        lines.append(f"| {fee} | {n(cells[0][0])} | {n(cells[1][0])} | {cells[1][1]:,.1f} |")
+    lines.append("")
     for label, hours in EPOCHS.items():
         lines += [f"## Skenario, epoch {label}", ""] + scenario_table(Params(
             **{**p.__dict__, "epoch_hours": hours})) + [""]
@@ -94,21 +135,25 @@ def main() -> None:
     for label, hours in EPOCHS.items():
         rows = sweep(GRID, DAYS, hours)
         good = [r for r in rows if r["q_normal"] < r["breakeven"]]
-        good.sort(key=lambda r: (-round(r["honest_paid_ratio"], 3), r["attacker_net_per_day"]))
+        good.sort(key=lambda r: (-round(r["honest_paid_ratio"], 3), r["attacker_net_per_day_q1"],
+                                 r["attacker_net_per_day"]))
         lines += [
             f"## Sweep, epoch {label}: 10 kombinasi teratas",
             "",
             f"Dari {len(rows)} kombinasi, {len(good)} memenuhi syarat q_normal < titik impas. Urutannya: hadiah penantang"
-            " jujur yang terbayar penuh lebih dulu, lalu untung penyerang per hari yang paling kecil.",
+            " jujur terbayar penuh (tanpa farming) lebih dulu, lalu untung penyerang pasti per hari yang paling kecil."
+            " Kolom 'Jujur saat farming' adalah bagian hadiah jujur yang tetap terbayar saat ada penyerang.",
             "",
-            "| Ambang | ppm | Mult | Stake | Titik impas | Hadiah jujur terbayar | Supply akhir | Kas akhir"
-            " | Untung penyerang/hari |",
-            "|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+            "| Ambang | ppm | Mult | Stake | Fee | Titik impas | Jujur terbayar | Jujur saat farming"
+            " | Penyerang rata-rata/hari | Penyerang pasti/hari | NEAR penyerang pasti/hari |",
+            "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
         ]
         for r in good[:10]:
             lines.append(f"| {r['threshold_bps']} | {r['budget_ppm']} | {r['reward_multiplier']} | "
-                         f"{r['challenge_stake']} | {pct(r['breakeven'])} | {pct(r['honest_paid_ratio'])} | "
-                         f"{n(r['supply_end'])} | {n(r['treasury_end'])} | {n(r['attacker_net_per_day'])} |")
+                         f"{r['challenge_stake']} | {r['appraisal_fee']} | {pct(r['breakeven'])} | "
+                         f"{pct(r['honest_paid_ratio'])} | {pct(r['honest_paid_ratio_farming'])} | "
+                         f"{n(r['attacker_net_per_day'])} | {n(r['attacker_net_per_day_q1'])} | "
+                         f"{r['attacker_near_per_day_q1']:,.1f} |")
         lines.append("")
 
     lines += ["## Grafik", "", "![Supply](supply.svg)", "", "![Terbakar](burned.svg)", "", "![Kas](treasury.svg)", ""]
