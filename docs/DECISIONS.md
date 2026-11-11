@@ -124,4 +124,6 @@ Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blue
   7. **Sidak `Failed` melepas slot `max_challenges`**, sesuai M-12 "tidak ada yang berubah". Sidak `Pending`, `Caught`, `Survived`, dan `Voided` tetap memakai slot.
   8. **Hadiah nol tidak dicatat sebagai entri `Reward`.** Penantang yang benar saat budget habis hanya menerima stake kembali.
   9. **Sidak dihitung ke epoch hanya jika `Caught` atau `Survived`.** `Failed` dan `Voided` tidak memengaruhi streak (M-15).
+  10. **`faucet` membayar penyimpanannya sendiri.** Pemanggil membayar setiap byte yang ditulis panggilan itu: registrasi akun, catatan klaim, dan entri log. Lampirkan 0,01 NEAR; kelebihannya dikembalikan. Tanpa ini, klaim dari akun sybil menguras NEAR kontrak sampai callback gagal karena storage staking, dan escrow tertahan selamanya (temuan review S2).
+  11. **`new` bersifat `#[private]`.** Hanya akun kontrak sendiri yang bisa menginisialisasi, supaya deploy dan init yang terkirim terpisah tidak bisa didahului pihak lain dengan `outlayer_id` miliknya sendiri. Skrip deploy S4 memanggil `new` dari akun kontrak.
 - **Alasan:** Setiap butir menutup jalur yang membuat token hilang, tertahan, atau tidak tercatat, tanpa mengubah aturan M yang tertulis.

@@ -35,3 +35,9 @@
 - **CHECKPOINT 1:** manusia memutuskan SIDAK dilanjutkan dengan `threshold_bps` 7500 (D-10).
 - Plan Section 2 ditulis: `docs/superpowers/plans/2026-11-11-section-2-contract.md`.
 - S2-T1..T7: kontrak `contracts/taksir` dan `contracts/mock-outlayer` selesai. Unit test 63/63 dan sandbox 15/15. Build `cargo near build non-reproducible-wasm` menghasilkan `taksir.wasm` sebesar 261.638 byte.
+- S2-R: review menyeluruh (reviewer baru, opus): 0 Critical, 2 Important, 6 Minor. Hasil pass perbaikan:
+  - faucet kini membayar penyimpanannya sendiri;
+  - `new` menjadi `#[private]`;
+  - skenario gas terburuk di 170 TGas: receipt terberat 5,1 TGas.
+  Suite akhir: unit 65, sandbox 17, mock 3, semuanya lolos. Clippy bersih. `taksir.wasm` 261.974 byte. Enam temuan Minor ditunda dan dilaporkan di CHECKPOINT 2.
+- **CHECKPOINT 2:** menunggu keputusan manusia.
