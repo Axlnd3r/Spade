@@ -382,7 +382,37 @@ async fn s12_callbacks_are_private() {
 async fn s12b_init_twice_rejected() {
     let e = Env::start(json!({})).await;
     let args = json!({ "params": params(&e.mock, json!({})) });
-    e.fails_with(&e.alice, "new", args, NearToken::from_near(0), "already been initialized").await;
+    e.fails_with(&e.taksir, "new", args, NearToken::from_near(0), "already been initialized").await;
+}
+
+/// Deploy without init, then a stranger tries to initialize with their own params.
+#[tokio::test]
+async fn s12c_only_the_contract_account_can_init() {
+    let (taksir_wasm, _) = wasms().clone();
+    let sandbox = near_sandbox::Sandbox::start_sandbox().await.unwrap();
+    let net = NetworkConfig::from_rpc_url("sandbox", sandbox.rpc_addr.parse().unwrap());
+    let signer =
+        Signer::from_secret_key(near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PRIVATE_KEY.parse().unwrap()).unwrap();
+    let taksir = account(&sandbox, "taksir.sandbox").await;
+    let eve = account(&sandbox, "eve.sandbox").await;
+    near_api::Contract::deploy(taksir.clone())
+        .use_code(taksir_wasm)
+        .without_init_call()
+        .with_signer(signer.clone())
+        .send_to(&net)
+        .await
+        .unwrap()
+        .assert_success();
+    let r = near_api::Contract(taksir.clone())
+        .call_function("new", json!({ "params": params(&eve, json!({})) }))
+        .transaction()
+        .gas(NearGas::from_tgas(300))
+        .with_signer(eve.clone(), signer.clone())
+        .send_to(&net)
+        .await
+        .unwrap();
+    let text = format!("{r:?}");
+    assert!(r.into_result().is_err() && text.contains("is private"), "stranger init must fail: {text}");
 }
 
 /// Five-minute epochs; each step jumps ~330 s, so it always closes the epoch

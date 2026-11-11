@@ -84,7 +84,10 @@ pub struct Contract {
 
 #[near]
 impl Contract {
+    /// Only the contract account itself can initialize, so a deploy followed by
+    /// a separate init transaction cannot be front-run with foreign params.
     #[init]
+    #[private]
     pub fn new(params: Params) -> Self {
         params.validate();
         let me = env::current_account_id();
