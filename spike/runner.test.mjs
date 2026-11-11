@@ -62,6 +62,7 @@ test("classifyStatus separates fatal auth errors, retryable errors, failures and
   assert.equal(classifyStatus(200), "ok");
   assert.equal(classifyStatus(401), "fatal");
   assert.equal(classifyStatus(403), "fatal");
+  assert.equal(classifyStatus(402), "fatal");
   assert.equal(classifyStatus(429), "retry");
   assert.equal(classifyStatus(503), "retry");
   assert.equal(classifyStatus(400), "fail");

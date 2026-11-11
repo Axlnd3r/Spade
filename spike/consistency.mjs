@@ -88,7 +88,7 @@ async function appraise(model, prompt, lines) {
         signal: AbortSignal.any([AbortSignal.timeout(TIMEOUT_MS), stop.signal]),
       });
       const kind = classifyStatus(res.status);
-      if (kind === "fatal") throw new FatalApiError(`HTTP ${res.status} from NEAR AI: check NEAR_AI_API_KEY and its balance`);
+      if (kind === "fatal") throw new FatalApiError(`HTTP ${res.status} from NEAR AI: check NEAR_AI_API_KEY and its credits or spending limit`);
       if (kind === "retry" && attempt < RETRY_DELAYS_MS.length) {
         const delay = retryDelayMs(res, attempt);
         await res.body?.cancel();

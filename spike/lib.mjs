@@ -165,7 +165,7 @@ export function parseRunOptions({ seed, concurrency }) {
 
 export function classifyStatus(status) {
   if (status >= 200 && status < 300) return "ok";
-  if (status === 401 || status === 403) return "fatal";
+  if (status === 401 || status === 402 || status === 403) return "fatal";
   if (status === 429 || status >= 500) return "retry";
   return "fail";
 }
