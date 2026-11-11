@@ -1,0 +1,67 @@
+[
+  {
+    "name": "two_lines",
+    "lines": [
+      "a",
+      "b"
+    ],
+    "body_sha256": "4b829a319680dce2284bae267689ea728fa55b31f06e268e6b519de286e35065"
+  },
+  {
+    "name": "order_kept",
+    "lines": [
+      "b",
+      "a"
+    ],
+    "body_sha256": "377c1fd849baa4fbbfb7c4e32231f5c65e190c3afdaeb92bdfed94dcc7f05bbb"
+  },
+  {
+    "name": "quote_and_backslash",
+    "lines": [
+      "say \"hi\"",
+      "path C:\\tmp",
+      "c",
+      "d",
+      "e"
+    ],
+    "body_sha256": "466be2dbfe51f9f2556c862d6c9c4f8e74dfe0351ac3500ab8301d56eceecead"
+  },
+  {
+    "name": "inner_tab_and_control",
+    "lines": [
+      "a\tb",
+      "x\u0001y",
+      "c",
+      "d",
+      "e"
+    ],
+    "body_sha256": "53dd07d949584c2ab74b9887bc8a4d4d93c190e5ba16d91caa9df260422d8c32"
+  },
+  {
+    "name": "cjk_and_emoji",
+    "lines": [
+      "東京 1400万",
+      "😀 smile",
+      "é",
+      "ｚ",
+      "Z"
+    ],
+    "body_sha256": "cbb756dc9c249cb9de62e3b9fd9ab37a065cec3781ba7e61fd41ce27333a11ed"
+  },
+  {
+    "name": "dataset_n01",
+    "lines": [
+      "Espresso - 18000 IDR",
+      "Americano - 22000 IDR",
+      "Cappuccino - 28000 IDR",
+      "Cafe latte - 30000 IDR",
+      "Flat white - 32000 IDR",
+      "Cold brew - 27000 IDR",
+      "Matcha latte - 33000 IDR",
+      "Hot chocolate - 25000 IDR",
+      "Croissant - 21000 IDR",
+      "Banana bread slice - 19000 IDR"
+    ],
+    "body_sha256": "247a247ff4185c104e9f420a33e33e5b5043c0f7938f049bbe2fba6754b56610"
+  }
+]
