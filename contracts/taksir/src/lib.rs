@@ -3,11 +3,14 @@
 //! FT account; the counters below say which part is which (I-2).
 
 mod data;
+mod epoch;
 mod params;
 mod types;
 
 pub use params::Params;
 pub use types::{LogEntry, LogKind, Stats};
+
+use epoch::{EpochState, Streak};
 
 use near_contract_standards::fungible_token::core::FungibleTokenCore;
 use near_contract_standards::fungible_token::events::{FtBurn, FtMint};
@@ -54,6 +57,8 @@ pub struct Contract {
     burned_total: u128,
     log: Vector<LogEntry>,
     genesis_ms: u64,
+    epoch: EpochState,
+    streak: Streak,
 }
 
 #[near]
@@ -82,7 +87,11 @@ impl Contract {
             burned_total: 0,
             log: Vector::new(StorageKey::Log),
             genesis_ms: env::block_timestamp_ms(),
+            epoch: EpochState { index: 0, budget: 0, budget_left: 0, challenges: 0, catches: 0 },
+            streak: Streak { clean: 0, best: 0 },
         };
+        this.epoch.budget = epoch::budget_for(this.treasury, this.params.budget_ppm);
+        this.epoch.budget_left = this.epoch.budget;
         // M-1: the only mint, ever.
         this.token.internal_register_account(&me);
         this.token.internal_deposit(&me, TOTAL_SUPPLY);
@@ -94,6 +103,7 @@ impl Contract {
     /// M-3: one `faucet_amount` per account. Registers storage (NEP-145) when needed.
     #[payable]
     pub fn faucet(&mut self) -> U128 {
+        self.touch_epoch();
         let who = env::predecessor_account_id();
         let amount = self.params.faucet_amount.0;
         require!(!self.faucet_claimed.contains(&who), "faucet_claimed");
@@ -113,6 +123,11 @@ impl Contract {
         U128(amount)
     }
 
+    /// M-13: anyone can roll pending epochs forward.
+    pub fn poke(&mut self) {
+        self.touch_epoch();
+    }
+
     pub fn get_params(&self) -> Params {
         self.params.clone()
     }
@@ -124,14 +139,14 @@ impl Contract {
             treasury: U128(self.treasury),
             faucet_pool: U128(self.faucet_pool),
             escrow: U128(self.escrow),
-            epoch_index: 0,
-            epoch_by_time: 0,
-            budget: U128(0),
-            budget_left: U128(0),
-            epoch_challenges: 0,
-            epoch_catches: 0,
-            clean_streak: 0,
-            best_streak: 0,
+            epoch_index: self.epoch.index,
+            epoch_by_time: self.epoch_by_time(),
+            budget: U128(self.epoch.budget),
+            budget_left: U128(self.epoch.budget_left),
+            epoch_challenges: self.epoch.challenges,
+            epoch_catches: self.epoch.catches,
+            clean_streak: self.streak.clean,
+            best_streak: self.streak.best,
             appraisal_count: 0,
             challenge_count: 0,
             log_count: self.log.len() as u64,
@@ -143,7 +158,30 @@ impl Contract {
 // through one of these, so the log and `burned_total` stay complete.
 impl Contract {
     fn current_epoch(&self) -> u64 {
-        0
+        self.epoch.index
+    }
+
+    fn epoch_by_time(&self) -> u64 {
+        epoch::epoch_at(env::block_timestamp_ms(), self.genesis_ms, self.params.epoch_ms)
+    }
+
+    /// M-13/M-14: runs first in every state-changing method. Burns the unused
+    /// budgets of all epochs closed by this call as one `BurnEpoch` entry.
+    fn touch_epoch(&mut self) {
+        let target = self.epoch_by_time();
+        let closed = epoch::advance(
+            &mut self.epoch,
+            &mut self.streak,
+            &mut self.treasury,
+            target,
+            self.params.budget_ppm,
+        );
+        if let Some((from, to, total)) = closed {
+            if total > 0 {
+                self.burn_tokens(total, LogKind::BurnEpoch.as_str());
+                self.push_log_range(LogKind::BurnEpoch, None, total, None, from, to);
+            }
+        }
     }
 
     fn push_log(&mut self, kind: LogKind, account_id: Option<AccountId>, amount: u128, ref_id: Option<u64>) {
@@ -173,11 +211,15 @@ impl Contract {
 
     #[allow(dead_code)]
     fn burn_from_contract(&mut self, amount: u128, kind: LogKind, account_id: Option<AccountId>, ref_id: Option<u64>) {
+        self.burn_tokens(amount, kind.as_str());
+        self.push_log(kind, account_id, amount, ref_id);
+    }
+
+    fn burn_tokens(&mut self, amount: u128, memo: &str) {
         let me = env::current_account_id();
         self.token.internal_withdraw(&me, amount);
         self.burned_total += amount;
-        FtBurn { owner_id: &me, amount: U128(amount), memo: Some(kind.as_str()) }.emit();
-        self.push_log(kind, account_id, amount, ref_id);
+        FtBurn { owner_id: &me, amount: U128(amount), memo: Some(memo) }.emit();
     }
 
     fn pay_from_contract(&mut self, to: &AccountId, amount: u128) {

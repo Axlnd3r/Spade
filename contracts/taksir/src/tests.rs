@@ -202,3 +202,74 @@ fn params_unchanged_and_supply_never_rises() {
     assert_eq!(near_sdk::serde_json::to_string(&c.get_params()).unwrap(), before);
     assert!(c.ft_total_supply().0 <= SUPPLY);
 }
+
+mod epochs {
+    use super::*;
+    use crate::epoch::budget_for;
+
+    const EPOCH: u64 = 600_000;
+
+    #[test]
+    fn genesis_budget() {
+        let c = setup();
+        let s = c.get_stats();
+        assert_eq!(s.budget.0, 1200 * ONE);
+        assert_eq!(s.budget_left.0, 1200 * ONE);
+        assert_eq!(s.epoch_index, 0);
+    }
+
+    #[test]
+    fn unused_budget_burned() {
+        let mut c = setup();
+        ctx(&user("anyone"), GENESIS_MS + EPOCH, NearToken::from_near(0));
+        c.poke();
+        let s = c.get_stats();
+        let treasury = 60_000_000 * ONE - 1200 * ONE;
+        assert_eq!(s.treasury.0, treasury);
+        assert_eq!(s.total_supply.0, SUPPLY - 1200 * ONE);
+        assert_eq!(s.burned_total.0, 1200 * ONE);
+        assert_eq!(s.budget.0, budget_for(treasury, 20));
+        assert_eq!(s.epoch_index, 1);
+        let last = c.log.get(c.log.len() - 1).unwrap();
+        assert!(matches!(last.kind, LogKind::BurnEpoch));
+        assert_eq!((last.epoch_from, last.epoch_to, last.amount.0), (0, 0, 1200 * ONE));
+    }
+
+    #[test]
+    fn many_epochs_one_log() {
+        let mut c = setup();
+        let logs_before = c.log.len();
+        ctx(&user("anyone"), GENESIS_MS + 5 * EPOCH, NearToken::from_near(0));
+        c.poke();
+        let mut t = 60_000_000 * ONE;
+        let mut burned = 0;
+        for _ in 0..5 {
+            let b = budget_for(t, 20);
+            t -= b;
+            burned += b;
+        }
+        assert_eq!(c.log.len(), logs_before + 1);
+        let last = c.log.get(c.log.len() - 1).unwrap();
+        assert_eq!((last.epoch_from, last.epoch_to, last.amount.0), (0, 4, burned));
+        assert_eq!(c.get_stats().treasury.0, t);
+    }
+
+    #[test]
+    fn cap_1000_resumes_on_next_poke() {
+        let mut c = setup();
+        ctx(&user("anyone"), GENESIS_MS + 2500 * EPOCH, NearToken::from_near(0));
+        c.poke();
+        let s = c.get_stats();
+        assert_eq!((s.epoch_index, s.epoch_by_time), (1000, 2500));
+        c.poke();
+        c.poke();
+        assert_eq!(c.get_stats().epoch_index, 2500);
+    }
+
+    #[test]
+    fn faucet_rolls_epoch() {
+        let mut c = setup();
+        fund(&mut c, &user("alice"), GENESIS_MS + EPOCH);
+        assert_eq!(c.get_stats().epoch_index, 1);
+    }
+}
