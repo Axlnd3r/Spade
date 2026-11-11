@@ -601,3 +601,48 @@ p {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- ledger & verify ---- */
+.table-wrap {
+  overflow-x: auto;
+  border: var(--hairline);
+  background: rgba(0, 0, 0, 0.6);
+}
+.ledger {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+.ledger th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.188em;
+  color: var(--ash);
+  padding: 14px 16px;
+  border-bottom: var(--hairline);
+}
+.ledger td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+}
+.ledger__amount {
+  font-weight: 600;
+}
+.proof__pair {
+  display: contents;
+}
+.code {
+  margin: 0;
+  padding: 16px;
+  border: var(--hairline);
+  background: rgba(0, 0, 0, 0.7);
+  font-family: ui-monospace, "Cascadia Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: auto;
+  white-space: pre;
+}
