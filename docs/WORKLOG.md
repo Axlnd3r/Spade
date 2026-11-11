@@ -42,3 +42,11 @@
   Suite akhir: unit 65, sandbox 17, mock 3, semuanya lolos. Clippy bersih. `taksir.wasm` 261.974 byte. Enam temuan Minor ditunda dan dilaporkan di CHECKPOINT 2.
 - **CHECKPOINT 2:** manusia memilih merge ke `main` (lokal, fast-forward, `048ae46`).
 - Plan Section 3 ditulis: `docs/superpowers/plans/2026-11-11-section-3-enclave.md`. Probe signature NEAR AI: `provider_tee`, dan hash request/respons cocok dengan byte yang dikirim dan diterima.
+- S3 selesai:
+  - enclave `appraiser.wasm` dibangun reproducible, dengan hash `0206187e…48ee2`;
+  - dirilis di GitHub sebagai `enclave-v1`;
+  - secret OutLayer dipasang oleh manusia;
+  - dua eksekusi testnet berhasil, termasuk satu `request_execution` dengan argumen persis seperti kontrak (lihat `docs/TESTNET.md`, D-13, dan D-14).
+
+  Akun testnet manusia: `spade-taksir.testnet` (10 NEAR dari faucet).
+- **CHECKPOINT 3:** menunggu keputusan manusia.

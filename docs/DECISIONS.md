@@ -152,3 +152,12 @@ Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blue
 - **Alasan:**
   - Keputusan 1 dan 2 mencegah run yang mati tanpa output.
   - Keputusan 3 memenuhi tujuan blueprint: field `c`, `a`, `g` ada "supaya bisa diverifikasi di luar".
+
+## D-14 Bentuk hasil OutLayer dan deposit eksekusi (S3-T4, 2026-11-11)
+
+- **Konteks:** D-7 mencatat bahwa bentuk hasil `request_execution` belum didokumentasikan. Kontrak dibuat menerima objek JSON maupun string JSON.
+- **Temuan** (transaksi `HxcCsWyo…`, `docs/TESTNET.md`): dengan `response_format: "Text"`, nilai kembalian adalah string JSON yang memuat stdout enclave apa adanya.
+- **Keputusan:**
+  - Kontrak tetap memakai `Text`, sehingga urutan kunci dan byte stdout tidak diubah OutLayer. `parse_output` tidak perlu diubah.
+  - Nilai awal `exec_deposit` di S4: **0,0071 NEAR**, yaitu estimasi 0,007001 NEAR ditambah margin. Sisanya dikembalikan OutLayer ke `payer_account_id`.
+- **Alasan:** bentuk Text sudah diuji di unit test kontrak dan dibuktikan on-chain.
