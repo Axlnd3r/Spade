@@ -62,3 +62,33 @@ Secret dipasang oleh manusia: `outlayer secrets set … --wasm-hash 0206187e… 
 | Keadaan awal | supply 100 jt, kas 60 jt, faucet 40 jt, budget epoch 300 TAKSIR |
 
 Access key akun kontrak **belum dihapus**. Penghapusan key (T-3) adalah langkah manusia di S6.
+
+### Secret OutLayer untuk kontrak (2026-11-11)
+
+Manusia memasang ulang profil `taksir` dengan opsi `--access whitelist:v1.spade-taksir.testnet,spade-taksir.testnet --direct`. Dengan `--direct`, whitelist menilai akun yang memanggil `outlayer.testnet`, yaitu kontrak. Kedua run e2e di bawah membuktikan kontrak bisa membaca secret ini.
+
+### E2E `node scripts/e2e.mjs v1.spade-taksir.testnet` (2026-11-11, penanda tangan `spade-taksir.testnet`)
+
+Kedua run selesai dengan exit 0. Run 2 melewati faucet karena saldo sudah ada, dan memakai data baru.
+
+| Run | Langkah | Transaksi | Hasil |
+|---|---|---|---|
+| 1 | faucet | `8CLHKy6xhurT3MALd8QGdscapeGcTYePAVztm1WD3515` | +500 TAKSIR |
+| 1 | taksir data normal (#0) | `EwxNUUfEEcZ7de7WBkQetJMR47BvzBJmpJcyFrT27hLu` | `Priced` 2500 |
+| 1 | sidak #0, urutan diacak | `4neiQ8iqpZvxaEjXVPJWdYSNWuBBAThPYQyunTNkhW46` | `Survived` (1500 vs 2500, selisih 40% < 75%); stake 25 dibakar |
+| 1 | taksir a02 + baris unik (#1) | `Jjb5CzHuuq1cdiEcGotwxCSVg3QPG7djGv8nYcUr3Z9` | `Priced` 1 |
+| 1 | sidak #1, urutan dibalik | `2J7mBJvqynL8YjRSdLiP3bR4rQZFPZf1hQdKCrWwQsML` | `Survived` (1 vs 1) |
+| 2 | faucet | (dilewati, saldo 430 TAKSIR) | — |
+| 2 | taksir data normal (#2) | `5JwhMFUkuacR51MFZSq4CuFUvRMep4wRDuE2gQWFjWYS` | `Priced` 1500 |
+| 2 | sidak #2, urutan diacak | `2dmQ1L9kP7CpPhfYaMBoMjz6ecHWMVEEPV8b5wVuccXJ` | `Survived` (1500 vs 1500) |
+| 2 | taksir a02 + baris unik (#3) | `6DZnmbRfCwiBneg3Uqy1Gaxuyq8e3GLyFtDLJVMVEwpz` | `Priced` **10000**: injeksi prompt di baris terakhir berhasil |
+| 2 | sidak #3, urutan dibalik | `9h6E6UqnaRC4dYdEkEiQXGLpWtoawimyFWyJ528yoMjc` | **`Caught`** (1 vs 10000). Stake dikembalikan dan reward 50 TAKSIR (2 × 25) dibayar dari kas |
+
+- **Invarian I-2** `ft_balance_of(kontrak) == treasury + faucet_pool + escrow` terpenuhi di akhir kedua run.
+- **Log** mencatat `Mint`, `Faucet`, `BurnFee`, `BurnStake`, `BurnEpoch` (300 TAKSIR, satu epoch 10 menit tanpa tangkapan), dan `Reward`.
+- **`response_hash`** terisi di setiap taksiran, misalnya #0 `17d6a2d3a6ca7657…`.
+- **Perilaku `payer_account_id` saat yang memanggil OutLayer adalah kontrak** (D-7):
+  - Sisa `exec_deposit` dikembalikan **oleh `outlayer.testnet` langsung ke pengguna** (payer), bukan ke kontrak. Nilainya 0,005964–0,005968 NEAR dari 0,0071 NEAR, jadi biaya eksekusi riil sekitar 0,00113 NEAR.
+  - Transfer lain dari `system` adalah refund gas.
+  - Kontrak hanya menyimpan `storage_fee` 0,05 NEAR per operasi.
+  - Biaya bersih per taksiran atau sidak bagi pengguna: sekitar 0,0511 NEAR ditambah gas.
