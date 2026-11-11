@@ -58,3 +58,35 @@ pub struct Stats {
     pub challenge_count: u64,
     pub log_count: u64,
 }
+
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AppraisalStatus {
+    Pending,
+    Priced,
+    Caught,
+    Failed,
+}
+
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Debug)]
+pub struct Appraisal {
+    pub id: u64,
+    pub owner: AccountId,
+    /// Normalized lines joined with "\n": exactly what the enclave saw.
+    pub data: String,
+    pub raw_hash: String,
+    pub canonical_hash: String,
+    pub status: AppraisalStatus,
+    pub price: Option<u32>,
+    pub reason: String,
+    pub model: String,
+    pub chat_id: String,
+    pub signing_address: String,
+    pub signature: String,
+    pub created_ms: u64,
+    pub priced_ms: Option<u64>,
+    /// Challenges that count toward `max_challenges`: pending or resolved, not failed.
+    pub active_challenges: u32,
+    pub challenge_ids: Vec<u64>,
+}

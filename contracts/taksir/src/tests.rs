@@ -273,3 +273,187 @@ mod epochs {
         assert_eq!(c.get_stats().epoch_index, 1);
     }
 }
+
+pub mod appraisals {
+    use super::*;
+    use crate::data::{canonical_hash, normalize_lines, raw_hash, to_hex};
+    use near_sdk::serde_json::{self, json};
+    use near_sdk::PromiseResult;
+
+    /// exec_deposit + storage_fee of `test_params`.
+    pub fn op_deposit() -> NearToken {
+        NearToken::from_millinear(150)
+    }
+
+    pub fn data5(tag: &str) -> String {
+        (1..=5).map(|i| format!("{tag} line {i}")).collect::<Vec<_>>().join("\n")
+    }
+
+    pub fn hash_of(text: &str) -> String {
+        to_hex(&raw_hash(&normalize_lines(text)))
+    }
+
+    pub fn ok_output(text: &str, price: u32) -> Vec<u8> {
+        let out = json!({"v":1,"h":hash_of(text),"p":price,"r":"why","m":"model","c":"chat","a":"0xa","g":"sig"});
+        serde_json::to_vec(&serde_json::Value::String(out.to_string())).unwrap()
+    }
+
+    /// The contract calling its own callback, with `result` as promise 0.
+    pub fn callback_ctx(now_ms: u64, result: PromiseResult) {
+        let mut b = VMContextBuilder::new();
+        b.current_account_id(contract_id())
+            .predecessor_account_id(contract_id())
+            .signer_account_id(contract_id())
+            .block_timestamp(now_ms * 1_000_000)
+            .prepaid_gas(near_sdk::Gas::from_tgas(40));
+        testing_env!(
+            b.build(),
+            near_sdk::test_vm_config(),
+            near_sdk::RuntimeFeesConfig::test(),
+            Default::default(),
+            vec![result]
+        );
+    }
+
+    /// Funded `who` appraises `text`; returns the appraisal id.
+    pub fn appraise_as(c: &mut Contract, who: &AccountId, text: &str, now_ms: u64) -> u64 {
+        ctx(who, now_ms, op_deposit());
+        let _ = c.appraise(text.to_string());
+        c.get_stats().appraisal_count - 1
+    }
+
+    /// Appraisal priced at `price`.
+    pub fn priced(c: &mut Contract, who: &AccountId, text: &str, price: u32, now_ms: u64) -> u64 {
+        let id = appraise_as(c, who, text, now_ms);
+        callback_ctx(now_ms, PromiseResult::Successful(ok_output(text, price)));
+        c.on_appraise_result(id);
+        id
+    }
+
+    #[test]
+    fn appraise_holds_fee() {
+        let mut c = setup();
+        let a = user("alice");
+        fund(&mut c, &a, GENESIS_MS + 1);
+        let id = appraise_as(&mut c, &a, &data5("menu"), GENESIS_MS + 2);
+        assert_eq!(c.ft_balance_of(a.clone()).0, 490 * ONE);
+        assert_eq!(c.get_stats().escrow.0, 10 * ONE);
+        let ap = c.get_appraisal(id).unwrap();
+        assert_eq!(ap.status, AppraisalStatus::Pending);
+        assert_eq!(ap.owner, a);
+        assert_eq!(ap.raw_hash, hash_of(&data5("menu")));
+        assert_eq!(ap.canonical_hash, to_hex(&canonical_hash(&normalize_lines(&data5("menu")))));
+    }
+
+    #[test]
+    #[should_panic(expected = "too_few_rows")]
+    fn appraise_rejects_four_rows() {
+        let mut c = setup();
+        let a = user("alice");
+        fund(&mut c, &a, GENESIS_MS + 1);
+        appraise_as(&mut c, &a, "a\nb\nc\nd", GENESIS_MS + 2);
+    }
+
+    #[test]
+    #[should_panic(expected = "too_large")]
+    fn appraise_rejects_too_large() {
+        let mut c = setup();
+        let a = user("alice");
+        fund(&mut c, &a, GENESIS_MS + 1);
+        let text = format!("{}\n{}", data5("x"), "y".repeat(2001 - data5("x").len() - 1));
+        assert_eq!(text.len(), 2001);
+        appraise_as(&mut c, &a, &text, GENESIS_MS + 2);
+    }
+
+    #[test]
+    #[should_panic(expected = "already_appraised")]
+    fn appraise_rejects_same_data_while_pending() {
+        let mut c = setup();
+        let a = user("alice");
+        fund(&mut c, &a, GENESIS_MS + 1);
+        appraise_as(&mut c, &a, &data5("menu"), GENESIS_MS + 2);
+        appraise_as(&mut c, &a, &data5("menu"), GENESIS_MS + 3);
+    }
+
+    #[test]
+    #[should_panic(expected = "already_appraised")]
+    fn appraise_rejects_reordered_data() {
+        let mut c = setup();
+        let a = user("alice");
+        fund(&mut c, &a, GENESIS_MS + 1);
+        let text = data5("menu");
+        let mut lines: Vec<&str> = text.lines().collect();
+        lines.reverse();
+        priced(&mut c, &a, &text, 300, GENESIS_MS + 2);
+        appraise_as(&mut c, &a, &lines.join("\n"), GENESIS_MS + 3);
+    }
+
+    #[test]
+    #[should_panic(expected = "deposit_low")]
+    fn appraise_rejects_low_deposit() {
+        let mut c = setup();
+        let a = user("alice");
+        fund(&mut c, &a, GENESIS_MS + 1);
+        ctx(&a, GENESIS_MS + 2, NearToken::from_millinear(149));
+        let _ = c.appraise(data5("menu"));
+    }
+
+    #[test]
+    fn appraise_success_burns() {
+        let mut c = setup();
+        let a = user("alice");
+        fund(&mut c, &a, GENESIS_MS + 1);
+        let id = priced(&mut c, &a, &data5("menu"), 300, GENESIS_MS + 2);
+        let ap = c.get_appraisal(id).unwrap();
+        assert_eq!((ap.status, ap.price), (AppraisalStatus::Priced, Some(300)));
+        assert_eq!((ap.reason.as_str(), ap.chat_id.as_str(), ap.signature.as_str()), ("why", "chat", "sig"));
+        assert_eq!(ap.priced_ms, Some(GENESIS_MS + 2));
+        let s = c.get_stats();
+        assert_eq!(s.total_supply.0, SUPPLY - 10 * ONE);
+        assert_eq!(s.burned_total.0, 10 * ONE);
+        assert_eq!(s.escrow.0, 0);
+        let last = c.log.get(c.log.len() - 1).unwrap();
+        assert!(matches!(last.kind, LogKind::BurnFee));
+        assert_eq!((last.ref_id, last.amount.0), (Some(id), 10 * ONE));
+    }
+
+    #[test]
+    fn appraise_failure_refunds() {
+        let mut c = setup();
+        let a = user("alice");
+        fund(&mut c, &a, GENESIS_MS + 1);
+        let id = appraise_as(&mut c, &a, &data5("menu"), GENESIS_MS + 2);
+        callback_ctx(GENESIS_MS + 3, PromiseResult::Failed);
+        c.on_appraise_result(id);
+        assert_eq!(c.get_appraisal(id).unwrap().status, AppraisalStatus::Failed);
+        assert_eq!(c.ft_balance_of(a.clone()).0, 500 * ONE);
+        let s = c.get_stats();
+        assert_eq!((s.total_supply.0, s.escrow.0), (SUPPLY, 0));
+        let again = priced(&mut c, &a, &data5("menu"), 300, GENESIS_MS + 4);
+        assert_eq!(c.get_appraisal(again).unwrap().status, AppraisalStatus::Priced);
+    }
+
+    #[test]
+    fn appraise_bad_output_refunds() {
+        let mut c = setup();
+        let a = user("alice");
+        fund(&mut c, &a, GENESIS_MS + 1);
+        let id = appraise_as(&mut c, &a, &data5("menu"), GENESIS_MS + 2);
+        callback_ctx(GENESIS_MS + 3, PromiseResult::Successful(ok_output(&data5("other"), 300)));
+        c.on_appraise_result(id);
+        assert_eq!(c.get_appraisal(id).unwrap().status, AppraisalStatus::Failed);
+        assert_eq!(c.ft_balance_of(a).0, 500 * ONE);
+        assert_eq!(c.get_stats().escrow.0, 0);
+    }
+
+    #[test]
+    fn appraise_oversized_result_refunds() {
+        let mut c = setup();
+        let a = user("alice");
+        fund(&mut c, &a, GENESIS_MS + 1);
+        let id = appraise_as(&mut c, &a, &data5("menu"), GENESIS_MS + 2);
+        callback_ctx(GENESIS_MS + 3, PromiseResult::Successful(vec![b' '; MAX_RESULT_BYTES + 1]));
+        c.on_appraise_result(id);
+        assert_eq!(c.get_appraisal(id).unwrap().status, AppraisalStatus::Failed);
+    }
+}
