@@ -10,7 +10,7 @@ from model import CATCH, GRID, SCENARIOS, Params, breakeven_q, farm_per_data, si
 OUT = os.path.join(os.path.dirname(__file__), "..", "docs", "sim")
 DAYS = 60
 # The parameters Task 3 picks (D-15). Testnet runs 10-minute epochs; mainnet would run 24-hour ones.
-CHOSEN = Params()
+CHOSEN = Params(challenge_stake=25, reward_multiplier=2, budget_ppm=5)
 EPOCHS = {"24 jam (arah mainnet)": 24.0, "10 menit (testnet)": 1 / 6}
 
 

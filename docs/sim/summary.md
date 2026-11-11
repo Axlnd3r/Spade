@@ -8,15 +8,15 @@ Model ini tidak memakai angka acak; tingkat tertangkap diambil dari `docs/EXPERI
 | Parameter | Nilai |
 |---|---:|
 | appraisal_fee | 10 TAKSIR |
-| challenge_stake | 50 TAKSIR |
-| reward_multiplier | 4 |
+| challenge_stake | 25 TAKSIR |
+| reward_multiplier | 2 |
 | threshold_bps | 7500 |
-| budget_ppm | 20 per epoch |
+| budget_ppm | 5 per epoch |
 | Kas awal / supply awal | 60.000.000 / 100.000.000 |
 
 ## Titik impas penantang
 
-- Titik impas: q = stake / (multiplier × stake + stake) = **20,0%**.
+- Titik impas: q = stake / (multiplier × stake + stake) = **33,3%**.
 - Peluang tertangkap data biasa pada ambang 7500: **10,0%**. Angka ini di bawah titik impas, jadi menyidak data biasa secara asal-asalan rata-rata merugi.
 - Peluang tertangkap data jahil: **46,7%**. Angka ini di atas titik impas.
 
@@ -24,7 +24,7 @@ Model ini tidak memakai angka acak; tingkat tertangkap diambil dari `docs/EXPERI
 
 Penyerang menaksir data jahil miliknya sendiri, lalu menyidaknya satu per satu sampai tertangkap (paling banyak 3 kali per data). Ia melakukannya lebih dulu dari penantang lain dalam setiap epoch, sampai budget epoch habis.
 
-- Per data: hadiah harapan 170 TAKSIR, biaya harapan 58 TAKSIR (fee + stake yang hangus).
+- Per data: hadiah harapan 42 TAKSIR, biaya harapan 34 TAKSIR (fee + stake yang hangus).
 - Hadiah penyerang per epoch tidak pernah melebihi budget epoch (`test_farming_capped_by_budget`).
 - Kas turun persis sama dengan atau tanpa penyerang. Yang berubah adalah ke mana budget itu pergi: dibayarkan ke penyerang, bukan dibakar atau dibayarkan ke penantang jujur (`test_farming_drains_treasury_the_same_and_displaces_honest_rewards`).
 
@@ -32,19 +32,19 @@ Penyerang menaksir data jahil miliknya sendiri, lalu menyidaknya satu per satu s
 
 | Skenario | Supply akhir | Kas akhir | Total terbakar | Hadiah dibayar | Untung penyerang/hari |
 |---|---:|---:|---:|---:|---:|
-| sepi | 99.923.542 | 59.928.042 | 76.458 | 1.200 | 0 |
-| normal | 99.823.042 | 59.928.042 | 176.958 | 60.000 | 0 |
-| ai_buruk | 99.880.000 | 59.928.042 | 120.000 | 71.958 | 0 |
-| farming | 99.810.228 | 59.928.042 | 189.772 | 71.958 | 786 |
+| sepi | 99.977.953 | 59.982.003 | 22.047 | 300 | 0 |
+| normal | 99.899.503 | 59.982.003 | 100.497 | 15.000 | 0 |
+| ai_buruk | 99.925.000 | 59.982.003 | 75.000 | 17.997 | 0 |
+| farming | 99.887.988 | 59.982.003 | 112.012 | 17.997 | 58 |
 
 ## Skenario, epoch 10 menit (testnet)
 
 | Skenario | Supply akhir | Kas akhir | Total terbakar | Hadiah dibayar | Untung penyerang/hari |
 |---|---:|---:|---:|---:|---:|
-| sepi | 90.473.764 | 50.478.264 | 9.526.236 | 1.200 | 0 |
-| normal | 90.373.264 | 50.478.264 | 9.626.736 | 60.000 | 0 |
-| ai_buruk | 90.598.264 | 50.478.264 | 9.401.736 | 240.000 | 0 |
-| farming | 96.557.106 | 50.478.264 | 3.442.894 | 9.521.736 | 104.064 |
+| sepi | 97.459.133 | 57.463.183 | 2.540.867 | 300 | 0 |
+| normal | 97.380.683 | 57.463.183 | 2.619.317 | 15.000 | 0 |
+| ai_buruk | 97.448.183 | 57.463.183 | 2.551.817 | 60.000 | 0 |
+| farming | 97.856.934 | 57.463.183 | 2.143.066 | 2.536.817 | 8.188 |
 
 ## Sweep, epoch 24 jam (arah mainnet): 10 kombinasi teratas
 

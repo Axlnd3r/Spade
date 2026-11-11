@@ -1,0 +1,23 @@
+{
+  "appraisal_fee": "10000000000000000000",
+  "challenge_stake": "25000000000000000000",
+  "reward_multiplier": 2,
+  "threshold_bps": 7500,
+  "budget_ppm": 5,
+  "max_challenges": 3,
+  "faucet_amount": "500000000000000000000",
+  "epoch_ms": 600000,
+  "challenge_window_ms": 3600000,
+  "min_rows": 5,
+  "max_rows": 100,
+  "max_data_bytes": 2000,
+  "price_min": 1,
+  "price_max": 10000,
+  "outlayer_id": "outlayer.testnet",
+  "wasm_url": "https://github.com/Axlnd3r/Spade/releases/download/enclave-v1/appraiser.wasm",
+  "wasm_hash": "0206187e1ba0c53acb5c5e991b1d559c20eafb01d617a387be5a0848c7348ee2",
+  "secrets_profile": "taksir",
+  "secrets_owner": "spade-taksir.testnet",
+  "exec_deposit": "7100000000000000000000",
+  "storage_fee": "50000000000000000000000"
+}
