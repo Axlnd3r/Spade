@@ -100,3 +100,9 @@ Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blue
 - **Keputusan manusia:** SIDAK dilanjutkan, tanpa jalur cadangan TEBAK HARGA dan tanpa perbaikan prompt. `threshold_bps` awal = **7500**, menggantikan default blueprint 2500.
 - **Alasan:** pada 7500, data biasa tertangkap 10% (di tengah target 3–15%) dan data jahil 46,7%, sedangkan tangkapan karena noise tanpa permutasi hanya 2,2% (`docs/EXPERIMENT.md`). Nilai 8000 (data biasa 5,6%) terlalu dekat dengan batas bawah target.
 - **Belum final:** nilai dikunci di S4-T2 setelah simulasi.
+
+## D-11 Harness test sandbox kontrak (S2-T1, 2026-11-11)
+
+- **Konteks:** Blueprint menyebut `near-workspaces` untuk test integrasi. Template resmi `cargo near new` (cargo-near 0.23, near-sdk 5.30.1) memakai `near-sandbox` 0.4 + `near-api` 0.8 + `cargo-near-build`, dan skill `near-smart-contracts` juga memakai pasangan itu.
+- **Keputusan:** test sandbox `contracts/taksir/tests/` memakai `near-sandbox` + `near-api`, mengikuti template.
+- **Alasan:** Mengikuti template mengurangi konfigurasi buatan tangan. Perilaku yang diuji (13 skenario Section 2) tidak berubah.
