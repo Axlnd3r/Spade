@@ -1,7 +1,8 @@
 // Full flow on testnet: faucet -> appraise -> challenge, twice (normal data,
 // then adversarial data), then stats, log and invariant I-2.
 // Usage: node scripts/e2e.mjs v1.spade-taksir.testnet [signer]
-// Exit 0 when every step reached a terminal status and I-2 holds.
+// Exit 0 when every step reached a terminal status, the normal appraisal was
+// priced (a missing secret or broken enclave would only give Failed), and I-2 holds.
 import { readFileSync } from "node:fs";
 import { normalizeLines } from "../spike/lib.mjs";
 import { call, refundsTo, shuffledDifferent, txStatus, uniqueData, view } from "./lib/near.mjs";
@@ -96,6 +97,8 @@ console.log("\nstats", JSON.stringify(stats));
 console.log("log", JSON.stringify(log.map((e) => [e.kind, e.amount, e.ref_id, e.account_id])));
 console.log(`I-2 ft_balance_of(contract) ${held} == treasury + faucet_pool + escrow: ${i2}`);
 
-const terminal = steps.every((s) => s.ok && (s.status === undefined || s.status !== "Pending"));
+const terminal = steps.every((s) => s.ok && s.status !== "Pending");
+const priced = steps.find((s) => s.step === "appraise normal")?.status === "Priced";
 console.log("\nsummary", JSON.stringify({ contract, signer, steps, i2 }, null, 1));
-process.exit(terminal && i2 ? 0 : 1);
+console.log(`terminal ${terminal}, normal appraisal priced ${priced}, I-2 ${i2}`);
+process.exit(terminal && priced && i2 ? 0 : 1);
