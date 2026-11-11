@@ -459,3 +459,4 @@ pub mod appraisals {
 }
 
 mod challenges;
+mod views;

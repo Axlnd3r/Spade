@@ -317,6 +317,21 @@ impl Contract {
         self.appraisals.replace(ap.id as u32, ap);
     }
 
+    pub fn get_appraisals(&self, from: u64, limit: u64) -> Vec<Appraisal> {
+        page(self.appraisals.len(), from, limit).filter_map(|i| self.appraisals.get(i).cloned()).collect()
+    }
+
+    pub fn get_challenges(&self, appraisal_id: u64) -> Vec<Challenge> {
+        self.get_appraisal(appraisal_id)
+            .map(|ap| ap.challenge_ids.iter().filter_map(|&i| self.challenges.get(i as u32).cloned()).collect())
+            .unwrap_or_default()
+    }
+
+    /// T-5: every mint, burn, reward and faucet payout, oldest first.
+    pub fn get_log(&self, from: u64, limit: u64) -> Vec<LogEntry> {
+        page(self.log.len(), from, limit).filter_map(|i| self.log.get(i).cloned()).collect()
+    }
+
     pub fn get_appraisal(&self, id: u64) -> Option<Appraisal> {
         u32::try_from(id).ok().and_then(|i| self.appraisals.get(i)).cloned()
     }
@@ -461,6 +476,15 @@ impl Contract {
     fn take_from_user(&mut self, from: &AccountId, amount: u128) {
         self.token.internal_transfer(from, &env::current_account_id(), amount, None);
     }
+}
+
+const MAX_PAGE: u64 = 100;
+
+/// Indices `from..from+limit` within `len`, at most `MAX_PAGE` of them.
+fn page(len: u32, from: u64, limit: u64) -> std::ops::Range<u32> {
+    let start = from.min(len as u64);
+    let end = start.saturating_add(limit.min(MAX_PAGE)).min(len as u64);
+    start as u32..end as u32
 }
 
 fn refund_near(to: &AccountId, amount: NearToken) {
