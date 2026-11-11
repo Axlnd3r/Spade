@@ -646,3 +646,9 @@ p {
   overflow-x: auto;
   white-space: pre;
 }
+@media (max-width: 640px) {
+  .panel,
+  .bust {
+    padding: 20px;
+  }
+}
