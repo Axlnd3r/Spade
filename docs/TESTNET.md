@@ -92,3 +92,16 @@ Kedua run selesai dengan exit 0. Run 2 melewati faucet karena saldo sudah ada, d
   - Transfer lain dari `system` adalah refund gas.
   - Kontrak hanya menyimpan `storage_fee` 0,05 NEAR per operasi.
   - Biaya bersih per taksiran atau sidak bagi pengguna: sekitar 0,0511 NEAR ditambah gas.
+
+### Deploy `v2.spade-taksir.testnet` (2026-11-11, D-15 opsi B: fee 50)
+
+`INITIAL_NEAR=3.5 bash scripts/deploy.sh 2`. Modalnya 3,5 NEAR karena saldo akun induk tinggal 4,56 NEAR.
+
+| Item | Nilai |
+|---|---|
+| `taksir.wasm` | sama dengan v1: sha256 `a8b90d5a9d54ce1fb9085ee0e2980780acd8c8f4431d5ae2f92b5b7c0b6b0127` |
+| Buat akun | `5KkaDosNCW9D1mAzqbGYTPfFzfyvExaxRKah6WFnoNgF` |
+| Deploy + `new` | `2yFKVHrpSaqkbHCkMY9d3nsJCX8jE9phniFcYeaznurm` |
+| Parameter | `scripts/params.testnet.json` (`appraisal_fee` 50 TAKSIR); `get_params` identik |
+
+`v1` tetap ada di testnet sebagai arsip dari opsi A. Kontrak yang dipakai mulai sekarang adalah `v2`.

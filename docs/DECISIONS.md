@@ -204,7 +204,7 @@ Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blue
 | `storage_fee` | 0,05 NEAR | s15: taksiran terburuk 3.177 byte (0,0318 NEAR), sidak terburuk 2.598 byte. |
 | `outlayer_id`, `wasm_url`, `wasm_hash`, `secrets_profile`, `secrets_owner` | `outlayer.testnet`, rilis `enclave-v1`, `0206187e…8ee2`, `taksir`, `spade-taksir.testnet` | S3 dan `docs/TESTNET.md`. |
 
-- **Status:**
-  - `v1.spade-taksir.testnet` berjalan dengan opsi A.
-  - Parameter baru dianggap terkunci setelah manusia memilih A atau B di CHECKPOINT 4.
-  - Kalau B dipilih, `scripts/params.testnet.json` diubah ke `appraisal_fee` = 50 TAKSIR, lalu deploy ke `v2`.
+- **Status: B dipilih manusia di CHECKPOINT 4 (2026-11-11), parameter terkunci.**
+  - `scripts/params.testnet.json` memakai `appraisal_fee` 50 TAKSIR.
+  - Kontrak aktif: `v2.spade-taksir.testnet`.
+  - `v1` (opsi A) tidak dipakai lagi.

@@ -9,7 +9,7 @@ bash scripts/deploy.sh 1   # Git Bash di Windows
 ```
 
 1. Build kontrak di WSL (`cargo near build non-reproducible-wasm`), lalu salin hasilnya ke `dist/taksir.wasm` dan cetak sha256-nya.
-2. Buat `vN.spade-taksir.testnet` dengan modal 5 NEAR dari `spade-taksir.testnet`. Key-nya disimpan di legacy keychain `~/.near-credentials`.
+2. Buat `vN.spade-taksir.testnet` dengan modal `INITIAL_NEAR` NEAR (bawaan 5; kodenya saja mengunci sekitar 2,7 NEAR) dari `spade-taksir.testnet`. Key-nya disimpan di legacy keychain `~/.near-credentials`.
 3. Deploy dan panggil `new` dengan `scripts/params.testnet.json` dalam satu transaksi yang ditandatangani akun kontrak. Ini wajib karena `new` bersifat `#[private]`.
 4. Cetak `get_params`, `get_stats`, dan `ft_total_supply`.
 

@@ -5,15 +5,15 @@
 <line class="grid" x1="84" x2="600" y1="356.0" y2="356.0"/>
 <text class="tick" x="76" y="360.0" text-anchor="end">0</text>
 <line class="grid" x1="84" x2="600" y1="302.0" y2="302.0"/>
-<text class="tick" x="76" y="306.0" text-anchor="end">25 rb</text>
+<text class="tick" x="76" y="306.0" text-anchor="end">50 rb</text>
 <line class="grid" x1="84" x2="600" y1="248.0" y2="248.0"/>
-<text class="tick" x="76" y="252.0" text-anchor="end">50 rb</text>
+<text class="tick" x="76" y="252.0" text-anchor="end">100 rb</text>
 <line class="grid" x1="84" x2="600" y1="194.0" y2="194.0"/>
-<text class="tick" x="76" y="198.0" text-anchor="end">75 rb</text>
+<text class="tick" x="76" y="198.0" text-anchor="end">150 rb</text>
 <line class="grid" x1="84" x2="600" y1="140.0" y2="140.0"/>
-<text class="tick" x="76" y="144.0" text-anchor="end">100 rb</text>
+<text class="tick" x="76" y="144.0" text-anchor="end">200 rb</text>
 <line class="grid" x1="84" x2="600" y1="86.0" y2="86.0"/>
-<text class="tick" x="76" y="90.0" text-anchor="end">125 rb</text>
+<text class="tick" x="76" y="90.0" text-anchor="end">250 rb</text>
 <line class="axis" x1="84" x2="600" y1="356" y2="356"/>
 <text class="tick" x="84.0" y="374" text-anchor="middle">1</text>
 <text class="tick" x="162.7" y="374" text-anchor="middle">10</text>
@@ -31,40 +31,40 @@
 <text class="label" x="251" y="66">ai_buruk</text>
 <rect x="333" y="56" width="12" height="12" rx="3" fill="var(--s4)"/>
 <text class="label" x="350" y="66">farming</text>
-<polyline class="line" stroke="var(--s1)" points="84.0,355.2 92.7,354.4 101.5,353.6 110.2,352.8 119.0,352.0 127.7,351.2 136.5,350.4 145.2,349.6 154.0,348.9 162.7,348.1 171.5,347.3 180.2,346.5 188.9,345.7 197.7,344.9 206.4,344.1 215.2,343.3 223.9,342.5 232.7,341.7 241.4,340.9 250.2,340.1 258.9,339.3 267.7,338.5 276.4,337.7 285.2,336.9 293.9,336.2 302.6,335.4 311.4,334.6 320.1,333.8 328.9,333.0 337.6,332.2 346.4,331.4 355.1,330.6 363.9,329.8 372.6,329.0 381.4,328.2 390.1,327.4 398.8,326.6 407.6,325.8 416.3,325.0 425.1,324.3 433.8,323.5 442.6,322.7 451.3,321.9 460.1,321.1 468.8,320.3 477.6,319.5 486.3,318.7 495.1,317.9 503.8,317.1 512.5,316.3 521.3,315.5 530.0,314.7 538.8,313.9 547.5,313.1 556.3,312.3 565.0,311.6 573.8,310.8 582.5,310.0 591.3,309.2 600.0,308.4"/>
-<circle cx="84.0" cy="355.2" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 1: 368</title></circle>
-<circle cx="162.7" cy="348.1" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 10: 3,675</title></circle>
-<circle cx="250.2" cy="340.1" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 20: 7,350</title></circle>
-<circle cx="337.6" cy="332.2" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 30: 11,024</title></circle>
-<circle cx="425.1" cy="324.3" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 40: 14,699</title></circle>
-<circle cx="512.5" cy="316.3" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 50: 18,373</title></circle>
-<circle cx="600.0" cy="308.4" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 60: 22,047</title></circle>
-<polyline class="line" stroke="var(--s2)" points="84.0,352.4 92.7,348.8 101.5,345.1 110.2,341.5 119.0,337.9 127.7,334.3 136.5,330.7 145.2,327.1 154.0,323.4 162.7,319.8 171.5,316.2 180.2,312.6 188.9,309.0 197.7,305.3 206.4,301.7 215.2,298.1 223.9,294.5 232.7,290.9 241.4,287.3 250.2,283.6 258.9,280.0 267.7,276.4 276.4,272.8 285.2,269.2 293.9,265.6 302.6,261.9 311.4,258.3 320.1,254.7 328.9,251.1 337.6,247.5 346.4,243.8 355.1,240.2 363.9,236.6 372.6,233.0 381.4,229.4 390.1,225.8 398.8,222.1 407.6,218.5 416.3,214.9 425.1,211.3 433.8,207.7 442.6,204.0 451.3,200.4 460.1,196.8 468.8,193.2 477.6,189.6 486.3,186.0 495.1,182.3 503.8,178.7 512.5,175.1 521.3,171.5 530.0,167.9 538.8,164.3 547.5,160.6 556.3,157.0 565.0,153.4 573.8,149.8 582.5,146.2 591.3,142.5 600.0,138.9"/>
-<circle cx="84.0" cy="352.4" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 1: 1,675</title></circle>
-<circle cx="162.7" cy="319.8" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 10: 16,750</title></circle>
-<circle cx="250.2" cy="283.6" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 20: 33,500</title></circle>
-<circle cx="337.6" cy="247.5" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 30: 50,249</title></circle>
-<circle cx="425.1" cy="211.3" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 40: 66,999</title></circle>
-<circle cx="512.5" cy="175.1" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 50: 83,748</title></circle>
-<circle cx="600.0" cy="138.9" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 60: 100,497</title></circle>
-<polyline class="line" stroke="var(--s3)" points="84.0,353.3 92.7,350.6 101.5,347.9 110.2,345.2 119.0,342.5 127.7,339.8 136.5,337.1 145.2,334.4 154.0,331.7 162.7,329.0 171.5,326.3 180.2,323.6 188.9,320.9 197.7,318.2 206.4,315.5 215.2,312.8 223.9,310.1 232.7,307.4 241.4,304.7 250.2,302.0 258.9,299.3 267.7,296.6 276.4,293.9 285.2,291.2 293.9,288.5 302.6,285.8 311.4,283.1 320.1,280.4 328.9,277.7 337.6,275.0 346.4,272.3 355.1,269.6 363.9,266.9 372.6,264.2 381.4,261.5 390.1,258.8 398.8,256.1 407.6,253.4 416.3,250.7 425.1,248.0 433.8,245.3 442.6,242.6 451.3,239.9 460.1,237.2 468.8,234.5 477.6,231.8 486.3,229.1 495.1,226.4 503.8,223.7 512.5,221.0 521.3,218.3 530.0,215.6 538.8,212.9 547.5,210.2 556.3,207.5 565.0,204.8 573.8,202.1 582.5,199.4 591.3,196.7 600.0,194.0"/>
-<circle cx="84.0" cy="353.3" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 1: 1,250</title></circle>
-<circle cx="162.7" cy="329.0" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 10: 12,500</title></circle>
-<circle cx="250.2" cy="302.0" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 20: 25,000</title></circle>
-<circle cx="337.6" cy="275.0" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 30: 37,500</title></circle>
-<circle cx="425.1" cy="248.0" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 40: 50,000</title></circle>
-<circle cx="512.5" cy="221.0" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 50: 62,500</title></circle>
-<circle cx="600.0" cy="194.0" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 60: 75,000</title></circle>
-<polyline class="line" stroke="var(--s4)" points="84.0,352.0 92.7,347.9 101.5,343.9 110.2,339.9 119.0,335.8 127.7,331.8 136.5,327.8 145.2,323.7 154.0,319.7 162.7,315.7 171.5,311.6 180.2,307.6 188.9,303.6 197.7,299.5 206.4,295.5 215.2,291.5 223.9,287.4 232.7,283.4 241.4,279.4 250.2,275.4 258.9,271.3 267.7,267.3 276.4,263.3 285.2,259.2 293.9,255.2 302.6,251.2 311.4,247.1 320.1,243.1 328.9,239.1 337.6,235.0 346.4,231.0 355.1,227.0 363.9,222.9 372.6,218.9 381.4,214.9 390.1,210.8 398.8,206.8 407.6,202.8 416.3,198.7 425.1,194.7 433.8,190.7 442.6,186.6 451.3,182.6 460.1,178.6 468.8,174.5 477.6,170.5 486.3,166.5 495.1,162.4 503.8,158.4 512.5,154.4 521.3,150.3 530.0,146.3 538.8,142.3 547.5,138.2 556.3,134.2 565.0,130.2 573.8,126.2 582.5,122.1 591.3,118.1 600.0,114.1"/>
-<circle cx="84.0" cy="352.0" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 1: 1,867</title></circle>
-<circle cx="162.7" cy="315.7" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 10: 18,669</title></circle>
-<circle cx="250.2" cy="275.4" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 20: 37,338</title></circle>
-<circle cx="337.6" cy="235.0" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 30: 56,007</title></circle>
-<circle cx="425.1" cy="194.7" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 40: 74,675</title></circle>
-<circle cx="512.5" cy="154.4" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 50: 93,344</title></circle>
-<circle cx="600.0" cy="114.1" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 60: 112,012</title></circle>
-<text class="label" x="610" y="118.1">farming</text>
-<text class="label" x="610" y="142.9">normal</text>
-<text class="label" x="610" y="198.0">ai_buruk</text>
-<text class="label" x="610" y="312.4">sepi</text>
+<polyline class="line" stroke="var(--s1)" points="84.0,355.4 92.7,354.8 101.5,354.2 110.2,353.5 119.0,352.9 127.7,352.3 136.5,351.7 145.2,351.1 154.0,350.5 162.7,349.9 171.5,349.3 180.2,348.6 188.9,348.0 197.7,347.4 206.4,346.8 215.2,346.2 223.9,345.6 232.7,345.0 241.4,344.4 250.2,343.7 258.9,343.1 267.7,342.5 276.4,341.9 285.2,341.3 293.9,340.7 302.6,340.1 311.4,339.5 320.1,338.8 328.9,338.2 337.6,337.6 346.4,337.0 355.1,336.4 363.9,335.8 372.6,335.2 381.4,334.5 390.1,333.9 398.8,333.3 407.6,332.7 416.3,332.1 425.1,331.5 433.8,330.9 442.6,330.3 451.3,329.6 460.1,329.0 468.8,328.4 477.6,327.8 486.3,327.2 495.1,326.6 503.8,326.0 512.5,325.4 521.3,324.7 530.0,324.1 538.8,323.5 547.5,322.9 556.3,322.3 565.0,321.7 573.8,321.1 582.5,320.5 591.3,319.8 600.0,319.2"/>
+<circle cx="84.0" cy="355.4" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 1: 568</title></circle>
+<circle cx="162.7" cy="349.9" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 10: 5,675</title></circle>
+<circle cx="250.2" cy="343.7" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 20: 11,350</title></circle>
+<circle cx="337.6" cy="337.6" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 30: 17,024</title></circle>
+<circle cx="425.1" cy="331.5" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 40: 22,699</title></circle>
+<circle cx="512.5" cy="325.4" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 50: 28,373</title></circle>
+<circle cx="600.0" cy="319.2" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"><title>sepi, hari 60: 34,047</title></circle>
+<polyline class="line" stroke="var(--s2)" points="84.0,352.0 92.7,348.1 101.5,344.1 110.2,340.1 119.0,336.2 127.7,332.2 136.5,328.2 145.2,324.2 154.0,320.3 162.7,316.3 171.5,312.3 180.2,308.4 188.9,304.4 197.7,300.4 206.4,296.5 215.2,292.5 223.9,288.5 232.7,284.6 241.4,280.6 250.2,276.6 258.9,272.7 267.7,268.7 276.4,264.7 285.2,260.7 293.9,256.8 302.6,252.8 311.4,248.8 320.1,244.9 328.9,240.9 337.6,236.9 346.4,233.0 355.1,229.0 363.9,225.0 372.6,221.1 381.4,217.1 390.1,213.1 398.8,209.1 407.6,205.2 416.3,201.2 425.1,197.2 433.8,193.3 442.6,189.3 451.3,185.3 460.1,181.4 468.8,177.4 477.6,173.4 486.3,169.5 495.1,165.5 503.8,161.5 512.5,157.6 521.3,153.6 530.0,149.6 538.8,145.6 547.5,141.7 556.3,137.7 565.0,133.7 573.8,129.8 582.5,125.8 591.3,121.8 600.0,117.9"/>
+<circle cx="84.0" cy="352.0" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 1: 3,675</title></circle>
+<circle cx="162.7" cy="316.3" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 10: 36,750</title></circle>
+<circle cx="250.2" cy="276.6" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 20: 73,500</title></circle>
+<circle cx="337.6" cy="236.9" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 30: 110,249</title></circle>
+<circle cx="425.1" cy="197.2" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 40: 146,999</title></circle>
+<circle cx="512.5" cy="157.6" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 50: 183,748</title></circle>
+<circle cx="600.0" cy="117.9" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"><title>normal, hari 60: 220,497</title></circle>
+<polyline class="line" stroke="var(--s3)" points="84.0,352.5 92.7,349.0 101.5,345.5 110.2,342.0 119.0,338.4 127.7,334.9 136.5,331.4 145.2,327.9 154.0,324.4 162.7,320.9 171.5,317.4 180.2,313.9 188.9,310.4 197.7,306.9 206.4,303.4 215.2,299.8 223.9,296.3 232.7,292.8 241.4,289.3 250.2,285.8 258.9,282.3 267.7,278.8 276.4,275.3 285.2,271.8 293.9,268.2 302.6,264.7 311.4,261.2 320.1,257.7 328.9,254.2 337.6,250.7 346.4,247.2 355.1,243.7 363.9,240.2 372.6,236.7 381.4,233.1 390.1,229.6 398.8,226.1 407.6,222.6 416.3,219.1 425.1,215.6 433.8,212.1 442.6,208.6 451.3,205.1 460.1,201.6 468.8,198.1 477.6,194.5 486.3,191.0 495.1,187.5 503.8,184.0 512.5,180.5 521.3,177.0 530.0,173.5 538.8,170.0 547.5,166.5 556.3,163.0 565.0,159.4 573.8,155.9 582.5,152.4 591.3,148.9 600.0,145.4"/>
+<circle cx="84.0" cy="352.5" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 1: 3,250</title></circle>
+<circle cx="162.7" cy="320.9" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 10: 32,500</title></circle>
+<circle cx="250.2" cy="285.8" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 20: 65,000</title></circle>
+<circle cx="337.6" cy="250.7" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 30: 97,500</title></circle>
+<circle cx="425.1" cy="215.6" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 40: 130,000</title></circle>
+<circle cx="512.5" cy="180.5" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 50: 162,500</title></circle>
+<circle cx="600.0" cy="145.4" r="4" fill="var(--s3)" stroke="var(--surface)" stroke-width="2"><title>ai_buruk, hari 60: 195,000</title></circle>
+<polyline class="line" stroke="var(--s4)" points="84.0,352.0 92.7,348.1 101.5,344.1 110.2,340.1 119.0,336.2 127.7,332.2 136.5,328.2 145.2,324.2 154.0,320.3 162.7,316.3 171.5,312.3 180.2,308.4 188.9,304.4 197.7,300.4 206.4,296.5 215.2,292.5 223.9,288.5 232.7,284.6 241.4,280.6 250.2,276.6 258.9,272.7 267.7,268.7 276.4,264.7 285.2,260.7 293.9,256.8 302.6,252.8 311.4,248.8 320.1,244.9 328.9,240.9 337.6,236.9 346.4,233.0 355.1,229.0 363.9,225.0 372.6,221.1 381.4,217.1 390.1,213.1 398.8,209.1 407.6,205.2 416.3,201.2 425.1,197.2 433.8,193.3 442.6,189.3 451.3,185.3 460.1,181.4 468.8,177.4 477.6,173.4 486.3,169.5 495.1,165.5 503.8,161.5 512.5,157.6 521.3,153.6 530.0,149.6 538.8,145.6 547.5,141.7 556.3,137.7 565.0,133.7 573.8,129.8 582.5,125.8 591.3,121.8 600.0,117.9"/>
+<circle cx="84.0" cy="352.0" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 1: 3,675</title></circle>
+<circle cx="162.7" cy="316.3" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 10: 36,750</title></circle>
+<circle cx="250.2" cy="276.6" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 20: 73,500</title></circle>
+<circle cx="337.6" cy="236.9" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 30: 110,249</title></circle>
+<circle cx="425.1" cy="197.2" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 40: 146,999</title></circle>
+<circle cx="512.5" cy="157.6" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 50: 183,748</title></circle>
+<circle cx="600.0" cy="117.9" r="4" fill="var(--s4)" stroke="var(--surface)" stroke-width="2"><title>farming, hari 60: 220,497</title></circle>
+<text class="label" x="610" y="121.9">farming</text>
+<text class="label" x="610" y="135.9">normal</text>
+<text class="label" x="610" y="149.9">ai_buruk</text>
+<text class="label" x="610" y="323.2">sepi</text>
 </svg>

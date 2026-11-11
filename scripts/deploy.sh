@@ -15,6 +15,8 @@ N="${1:?usage: bash scripts/deploy.sh <N>}"
 PARENT="spade-taksir.testnet"
 CONTRACT="v${N}.${PARENT}"
 NEAR="${NEAR_EXE:-/c/Users/User/bin/near.exe}"
+# Funds the new account; the code alone locks ~2.7 NEAR of storage.
+INITIAL_NEAR="${INITIAL_NEAR:-5}"
 RPC="https://rpc.testnet.near.org"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # Git Bash may print either /c/Users/... or C:/Users/...
@@ -56,8 +58,8 @@ echo "taksir.wasm sha256: $(sha256sum "$WASM" | cut -d' ' -f1) ($(wc -c < "$WASM
 ARGS="$(node -e 'console.log(JSON.stringify({ params: require(process.argv[1]) }))' "$ROOT/scripts/params.testnet.json")"
 
 if [[ -z "$existing" ]]; then
-  echo "== 2/4 create $CONTRACT (5 NEAR from $PARENT)"
-  "$NEAR" account create-account fund-myself "$CONTRACT" '5 NEAR' autogenerate-new-keypair save-to-legacy-keychain \
+  echo "== 2/4 create $CONTRACT ($INITIAL_NEAR NEAR from $PARENT)"
+  "$NEAR" account create-account fund-myself "$CONTRACT" "$INITIAL_NEAR NEAR" autogenerate-new-keypair save-to-legacy-keychain \
     sign-as "$PARENT" network-config testnet sign-with-legacy-keychain send
 else
   echo "== 2/4 $CONTRACT exists without code: reusing it"
