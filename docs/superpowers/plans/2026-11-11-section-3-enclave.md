@@ -238,11 +238,11 @@ Hasil probe 2026-11-11 dicatat di Task 3: `chat_id` 45 karakter, signature 132 k
   - versi `rustc`;
   - `sha256sum appraiser.wasm`;
   - ukuran file.
-- [ ] **Step 2: 👤 Keputusan manusia.** URL wasm harus bisa diambil OutLayer tanpa login, sedangkan repo `Axlnd3r/Spade` masih privat. Tanyakan pilihannya:
-  - (a) buat repo publik sekarang (H-1 tetap mewajibkan ini sebelum tenggat), lalu `gh release create enclave-v1 appraiser.wasm`;
-  - (b) repo publik terpisah khusus rilis.
+- [ ] **Step 2: 👤 Izin push + rilis.** Repo `Axlnd3r/Spade` sudah publik (dicek 2026-11-11 lewat API GitHub). Minta izin manusia untuk dua hal:
+  - push `main`;
+  - membuat GitHub Release `enclave-v1` dengan aset `appraiser.wasm`. CLI `gh` belum terpasang di Windows, jadi rilis dibuat manusia lewat web GitHub atau setelah `gh` dipasang.
 
-  Jangan push atau rilis sebelum ada jawaban.
+  URL aset `https://github.com/Axlnd3r/Spade/releases/download/enclave-v1/appraiser.wasm` menjadi `wasm_url`. Cek bahwa URL itu bisa diunduh tanpa login dan sha256-nya sama dengan Step 1.
 - [ ] **Step 3:** Pasang CLI dengan `cargo +stable install --locked outlayer-cli` di WSL. Lalu siapkan perintah untuk dijalankan **manusia**, karena login menyimpan private key tanpa enkripsi dan secret berisi API key:
   - `outlayer login testnet`;
   - `outlayer secrets set '{"NEAR_AI_API_KEY":"…"}' --wasm-hash <sha> --profile taksir --access whitelist:<akun-testnet-manusia> --direct`.
