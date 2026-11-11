@@ -47,3 +47,18 @@ Secret dipasang oleh manusia: `outlayer secrets set … --wasm-hash 0206187e… 
   - Yang ditagih riil sekitar **0,0011 NEAR** (1.099.900–1.126.800 × 10¹⁸ yocto). Sisanya dikembalikan ke `payer_account_id`.
   - Gas transaksi sekitar 0,00073 NEAR.
 - **`payer_account_id`:** pada uji ini sama dengan penanda tangan, sehingga refund-nya tidak bisa dibedakan. Perilakunya saat dipanggil lewat kontrak (pemanggil ≠ payer) diuji di S4 (D-7).
+
+## Kontrak TAKSIR (S4)
+
+### Deploy `v1.spade-taksir.testnet` (2026-11-11, `bash scripts/deploy.sh 1`)
+
+| Item | Nilai |
+|---|---|
+| Kontrak | `v1.spade-taksir.testnet` (sub-akun `spade-taksir.testnet`, modal awal 5 NEAR) |
+| `taksir.wasm` | sha256 `a8b90d5a9d54ce1fb9085ee0e2980780acd8c8f4431d5ae2f92b5b7c0b6b0127`, 262.766 byte, `cargo near build non-reproducible-wasm` (code_hash bs58 `CMd9x3xLmM3dm9HDsxhZMz1Z4Etzcs3RgasvMnarWV4J`) |
+| Buat akun | `FX5pq8WfT5rEP7qiyZe5nzd9qcAwMtBWHP3NUxGHegro` |
+| Deploy + `new` (ditandatangani akun kontrak) | `CwEwDSocVtkuVytTkDQpYk8xqHhe1b5ew8icW8Pwziqr`; log `ft_mint` 10²⁶ ke kontrak, memo `genesis` |
+| Parameter | `scripts/params.testnet.json` (D-15); `get_params` identik |
+| Keadaan awal | supply 100 jt, kas 60 jt, faucet 40 jt, budget epoch 300 TAKSIR |
+
+Access key akun kontrak **belum dihapus**. Penghapusan key (T-3) adalah langkah manusia di S6.
