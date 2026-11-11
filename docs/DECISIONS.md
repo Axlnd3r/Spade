@@ -94,3 +94,9 @@ Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blue
   - `z-ai/glm-5.3-flash`, `Qwen/Qwen3.6-35B-A3B-FP8`, dan `Qwen/Qwen3.8-27B` menghabiskan seluruh token untuk reasoning, sehingga content-nya kosong.
   - Latency rata-rata 716 ms, maksimal 1381 ms, jauh di bawah batas 30 detik.
 - **Catatan:** di endpoint ini, `temperature: 0` tidak deterministik. Sekitar 20% pengulangan dengan urutan yang sama menghasilkan harga berbeda. Lihat `docs/EXPERIMENT.md`.
+
+## D-10 CHECKPOINT 1 (2026-11-11)
+
+- **Keputusan manusia:** SIDAK dilanjutkan, tanpa jalur cadangan TEBAK HARGA dan tanpa perbaikan prompt. `threshold_bps` awal = **7500**, menggantikan default blueprint 2500.
+- **Alasan:** pada 7500, data biasa tertangkap 10% (di tengah target 3–15%) dan data jahil 46,7%, sedangkan tangkapan karena noise tanpa permutasi hanya 2,2% (`docs/EXPERIMENT.md`). Nilai 8000 (data biasa 5,6%) terlalu dekat dengan batas bawah target.
+- **Belum final:** nilai dikunci di S4-T2 setelah simulasi.

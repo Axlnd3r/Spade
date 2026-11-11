@@ -32,4 +32,5 @@
 - S1-T7: model dipilih, yaitu `Qwen/Qwen3-VL-30B-A3B-Instruct` (D-9). Eksperimen 160 panggilan selesai dalam 29 detik, tanpa kegagalan.
   - Pada ambang 25%, data biasa tertangkap 40% dan data jahil 46,7%.
   - Usulan `threshold_bps` 7500 (data biasa 10%). Rinciannya di `docs/EXPERIMENT.md`.
-- **CHECKPOINT 1:** menunggu keputusan manusia.
+- **CHECKPOINT 1:** manusia memutuskan SIDAK dilanjutkan dengan `threshold_bps` 7500 (D-10).
+- Plan Section 2 ditulis: `docs/superpowers/plans/2026-11-11-section-2-contract.md`.
