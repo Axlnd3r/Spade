@@ -424,11 +424,11 @@ impl Contract {
             target,
             self.params.budget_ppm,
         );
-        if let Some((from, to, total)) = closed {
-            if total > 0 {
-                self.burn_tokens(total, LogKind::BurnEpoch.as_str());
-                self.push_log_range(LogKind::BurnEpoch, None, total, None, from, to);
-            }
+        if let Some((from, to, total)) = closed
+            && total > 0
+        {
+            self.burn_tokens(total, LogKind::BurnEpoch.as_str());
+            self.push_log_range(LogKind::BurnEpoch, None, total, None, from, to);
         }
     }
 

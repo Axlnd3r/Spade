@@ -3,6 +3,8 @@
 
 use near_sdk::env;
 
+/// Variant names mirror the error codes in D-2.
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, PartialEq, Eq)]
 pub enum DataError {
     TooLarge,
