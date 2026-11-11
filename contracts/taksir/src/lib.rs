@@ -9,7 +9,7 @@ mod params;
 mod types;
 
 pub use params::Params;
-pub use types::{Appraisal, AppraisalStatus, LogEntry, LogKind, Stats};
+pub use types::{Appraisal, AppraisalStatus, Challenge, ChallengeStatus, LogEntry, LogKind, Stats};
 
 use data::{canonical_hash, normalize_lines, raw_hash, to_hex, validate_data};
 use epoch::{EpochState, Streak};
@@ -51,6 +51,13 @@ enum StorageKey {
     Log,
     Appraisals,
     Seen,
+    Challenges,
+}
+
+/// M-11, exactly: caught when |p1 - p2| * 10_000 > threshold_bps * max(p1, p2).
+pub fn is_caught(p1: u32, p2: u32, threshold_bps: u32) -> bool {
+    let (hi, lo) = (p1.max(p2) as u128, p1.min(p2) as u128);
+    (hi - lo) * 10_000 > threshold_bps as u128 * hi
 }
 
 #[near(contract_state)]
@@ -72,6 +79,7 @@ pub struct Contract {
     appraisals: Vector<Appraisal>,
     /// `canonical_hash` of every appraisal that is not `Failed` (M-7, M-8).
     seen: LookupSet<[u8; 32]>,
+    challenges: Vector<Challenge>,
 }
 
 #[near]
@@ -104,6 +112,7 @@ impl Contract {
             streak: Streak { clean: 0, best: 0 },
             appraisals: Vector::new(StorageKey::Appraisals),
             seen: LookupSet::new(StorageKey::Seen),
+            challenges: Vector::new(StorageKey::Challenges),
         };
         this.epoch.budget = epoch::budget_for(this.treasury, this.params.budget_ppm);
         this.epoch.budget_left = this.epoch.budget;
@@ -207,6 +216,107 @@ impl Contract {
         self.appraisals.replace(id as u32, ap);
     }
 
+    /// M-9: re-appraise the same lines in another order, staking `challenge_stake`.
+    /// Attach at least `exec_deposit + storage_fee` NEAR and 170 TGas.
+    #[payable]
+    pub fn challenge(&mut self, appraisal_id: u64, variant: String) -> Promise {
+        self.touch_epoch();
+        let mut ap = self.get_appraisal(appraisal_id).unwrap_or_else(|| env::panic_str("not_found"));
+        require!(ap.status == AppraisalStatus::Priced, "not_priced");
+        let priced_ms = ap.priced_ms.unwrap_or_default();
+        require!(
+            env::block_timestamp_ms() <= priced_ms.saturating_add(self.params.challenge_window_ms),
+            "window_closed"
+        );
+        require!(ap.active_challenges < self.params.max_challenges, "max_challenges");
+        let lines = self.checked_lines(&variant);
+        require!(to_hex(&canonical_hash(&lines)) == ap.canonical_hash, "not_equivalent");
+        let variant_hash = to_hex(&raw_hash(&lines));
+        require!(variant_hash != ap.raw_hash, "same_order");
+        let refund = self.check_attached();
+        let challenger = env::predecessor_account_id();
+        let stake = self.params.challenge_stake.0;
+        self.take_from_user(&challenger, stake);
+        self.escrow += stake;
+        let id = self.challenges.len() as u64;
+        ap.active_challenges += 1;
+        ap.challenge_ids.push(id);
+        self.appraisals.replace(appraisal_id as u32, ap);
+        let normalized = lines.join("\n");
+        self.challenges.push(Challenge {
+            id,
+            appraisal_id,
+            challenger: challenger.clone(),
+            variant: normalized.clone(),
+            raw_hash: variant_hash,
+            status: ChallengeStatus::Pending,
+            price: None,
+            reward: U128(0),
+            chat_id: String::new(),
+            signing_address: String::new(),
+            signature: String::new(),
+            created_ms: env::block_timestamp_ms(),
+            resolved_ms: None,
+        });
+        refund_near(&challenger, refund);
+        self.request(&normalized, &challenger)
+            .then(Self::ext(env::current_account_id()).with_static_gas(CALLBACK_GAS).on_challenge_result(id))
+    }
+
+    /// M-11, M-12: pay the challenger, burn the stake, or refund it.
+    /// Counted in the epoch the result arrives in.
+    #[private]
+    pub fn on_challenge_result(&mut self, challenge_id: u64) {
+        self.touch_epoch();
+        let mut ch = self
+            .challenges
+            .get(challenge_id as u32)
+            .cloned()
+            .unwrap_or_else(|| env::panic_str("not_found"));
+        require!(ch.status == ChallengeStatus::Pending, "not_pending");
+        let mut ap = self.appraisals.get(ch.appraisal_id as u32).cloned().unwrap();
+        let stake = self.params.challenge_stake.0;
+        self.escrow -= stake;
+        match self.enclave_result(&ch.raw_hash) {
+            None => {
+                ch.status = ChallengeStatus::Failed;
+                ap.active_challenges -= 1;
+                self.pay_from_contract(&ch.challenger, stake);
+            }
+            Some(ok) => {
+                ch.price = Some(ok.p);
+                ch.chat_id = ok.c;
+                ch.signing_address = ok.a;
+                ch.signature = ok.g;
+                if ap.status == AppraisalStatus::Caught {
+                    ch.status = ChallengeStatus::Voided;
+                    self.pay_from_contract(&ch.challenger, stake);
+                } else if is_caught(ap.price.unwrap_or_default(), ok.p, self.params.threshold_bps) {
+                    ch.status = ChallengeStatus::Caught;
+                    ap.status = AppraisalStatus::Caught;
+                    let full = self.params.reward_multiplier as u128 * stake;
+                    let reward = full.min(self.epoch.budget_left);
+                    self.treasury -= reward;
+                    self.epoch.budget_left -= reward;
+                    ch.reward = U128(reward);
+                    self.pay_from_contract(&ch.challenger, stake + reward);
+                    if reward > 0 {
+                        self.push_log(LogKind::Reward, Some(ch.challenger.clone()), reward, Some(challenge_id));
+                    }
+                    self.epoch.challenges += 1;
+                    self.epoch.catches += 1;
+                } else {
+                    ch.status = ChallengeStatus::Survived;
+                    self.burn_from_contract(stake, LogKind::BurnStake, Some(ch.challenger.clone()), Some(challenge_id));
+                    self.epoch.challenges += 1;
+                }
+            }
+        }
+        ch.resolved_ms = Some(env::block_timestamp_ms());
+        self.challenges.replace(challenge_id as u32, ch);
+        self.appraisals.replace(ap.id as u32, ap);
+    }
+
     pub fn get_appraisal(&self, id: u64) -> Option<Appraisal> {
         u32::try_from(id).ok().and_then(|i| self.appraisals.get(i)).cloned()
     }
@@ -236,7 +346,7 @@ impl Contract {
             clean_streak: self.streak.clean,
             best_streak: self.streak.best,
             appraisal_count: self.appraisals.len() as u64,
-            challenge_count: 0,
+            challenge_count: self.challenges.len() as u64,
             log_count: self.log.len() as u64,
         }
     }

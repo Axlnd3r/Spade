@@ -457,3 +457,5 @@ pub mod appraisals {
         assert_eq!(c.get_appraisal(id).unwrap().status, AppraisalStatus::Failed);
     }
 }
+
+mod challenges;

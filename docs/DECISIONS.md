@@ -106,3 +106,22 @@ Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blue
 - **Konteks:** Blueprint menyebut `near-workspaces` untuk test integrasi. Template resmi `cargo near new` (cargo-near 0.23, near-sdk 5.30.1) memakai `near-sandbox` 0.4 + `near-api` 0.8 + `cargo-near-build`, dan skill `near-smart-contracts` juga memakai pasangan itu.
 - **Keputusan:** test sandbox `contracts/taksir/tests/` memakai `near-sandbox` + `near-api`, mengikuti template.
 - **Alasan:** Mengikuti template mengurangi konfigurasi buatan tangan. Perilaku yang diuji (13 skenario Section 2) tidak berubah.
+
+## D-12 Pelengkap dan penyimpangan kontrak terhadap bagian 2.3 (S2-T5, 2026-11-11)
+
+- **Konteks:** Blueprint diam atau tidak lengkap di beberapa titik yang menyangkut uang. Masing-masing diputuskan di plan Section 2 dan dikunci dengan test.
+- **Keputusan:**
+  1. **Status sidak `Voided`.** Hasil sidak yang masuk setelah taksirannya sudah `Caught` oleh sidak lain: stake dikembalikan, tanpa hadiah, dan tidak dihitung ke epoch. Enum blueprint tidak punya status untuk kasus ini (M-11).
+  2. **`LogKind::Mint`.** Satu entri saat `new`, supaya log memuat setiap mint dan burn (T-5).
+  3. **Satu entri `BurnEpoch` per pemanggilan**, dengan rentang `epoch_from..epoch_to`. Tanpa ini, 1.000 epoch yang terlewat berarti 1.000 entri log dan gas habis (M-14).
+  4. **`storage_unregister` selalu panic `unregister_disabled`.** Refund atau hadiah ke akun yang sudah tidak terdaftar akan panic di callback, sehingga escrow tertahan selamanya (I-5).
+  5. **`ft_transfer` dan `ft_transfer_call` ke akun kontrak ditolak** (`transfer_to_contract`). Token yang masuk dengan cara itu berada di luar kas, faucet, dan escrow, sehingga I-2 tidak lagi berlaku.
+  6. **Parameter tambahan `exec_deposit` dan `storage_fee`.** Pemanggil `appraise` dan `challenge` wajib melampirkan minimal `exec_deposit + storage_fee` NEAR dan 170 TGas.
+     - `exec_deposit` diteruskan ke OutLayer.
+     - `storage_fee` adalah biaya storage tetap yang tidak dikembalikan.
+     - Kelebihan deposit dikembalikan.
+     - Nilai riil keduanya ditetapkan di S4 dari `estimate_execution_cost`.
+  7. **Sidak `Failed` melepas slot `max_challenges`**, sesuai M-12 "tidak ada yang berubah". Sidak `Pending`, `Caught`, `Survived`, dan `Voided` tetap memakai slot.
+  8. **Hadiah nol tidak dicatat sebagai entri `Reward`.** Penantang yang benar saat budget habis hanya menerima stake kembali.
+  9. **Sidak dihitung ke epoch hanya jika `Caught` atau `Survived`.** `Failed` dan `Voided` tidak memengaruhi streak (M-15).
+- **Alasan:** Setiap butir menutup jalur yang membuat token hilang, tertahan, atau tidak tercatat, tanpa mengubah aturan M yang tertulis.

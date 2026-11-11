@@ -90,3 +90,34 @@ pub struct Appraisal {
     pub active_challenges: u32,
     pub challenge_ids: Vec<u64>,
 }
+
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ChallengeStatus {
+    Pending,
+    Caught,
+    Survived,
+    /// Enclave failed or its reply was rejected: stake refunded, nothing counted (M-12).
+    Failed,
+    /// The appraisal was already caught by another challenge: stake refunded, no reward.
+    Voided,
+}
+
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Debug)]
+pub struct Challenge {
+    pub id: u64,
+    pub appraisal_id: u64,
+    pub challenger: AccountId,
+    /// Normalized variant lines joined with "\n".
+    pub variant: String,
+    pub raw_hash: String,
+    pub status: ChallengeStatus,
+    pub price: Option<u32>,
+    pub reward: U128,
+    pub chat_id: String,
+    pub signing_address: String,
+    pub signature: String,
+    pub created_ms: u64,
+    pub resolved_ms: Option<u64>,
+}
