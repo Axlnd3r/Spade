@@ -69,9 +69,33 @@ pub fn min_storage(c: &Contract) -> NearToken {
     c.storage_balance_bounds().min
 }
 
+/// Covers registration plus the claim record and log entry a faucet call stores.
+pub const FAUCET_DEPOSIT: NearToken = NearToken::from_millinear(10);
+
 /// Registers `who` and gives it the faucet amount.
 pub fn fund(c: &mut Contract, who: &AccountId, now_ms: u64) {
-    ctx(who, now_ms, min_storage(c));
+    ctx(who, now_ms, FAUCET_DEPOSIT);
+    c.faucet();
+}
+
+#[test]
+#[should_panic(expected = "deposit_low")]
+fn faucet_registration_deposit_alone_is_not_enough() {
+    let mut c = setup();
+    let min = min_storage(&c);
+    ctx(&user("alice"), GENESIS_MS + 1, min);
+    c.faucet();
+}
+
+#[test]
+#[should_panic(expected = "deposit_low")]
+fn faucet_registered_account_still_pays_its_storage() {
+    let mut c = setup();
+    let a = user("alice");
+    let min = min_storage(&c);
+    ctx(&a, GENESIS_MS + 1, min);
+    c.storage_deposit(None, None);
+    ctx(&a, GENESIS_MS + 2, NearToken::from_near(0));
     c.faucet();
 }
 

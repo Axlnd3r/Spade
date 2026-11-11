@@ -125,6 +125,8 @@ impl Contract {
     }
 
     /// M-3: one `faucet_amount` per account. Registers storage (NEP-145) when needed.
+    /// The caller pays for every byte this call stores (account, claim record,
+    /// log entry); 0.01 NEAR is enough and the rest is refunded.
     #[payable]
     pub fn faucet(&mut self) -> U128 {
         self.touch_epoch();
@@ -132,18 +134,19 @@ impl Contract {
         let amount = self.params.faucet_amount.0;
         require!(!self.faucet_claimed.contains(&who), "faucet_claimed");
         require!(self.faucet_pool >= amount, "faucet_empty");
-        let mut refund = env::attached_deposit();
+        let before = env::storage_usage();
         if self.token.accounts.get(&who).is_none() {
-            let min = self.storage_balance_bounds().min;
-            require!(refund >= min, "deposit_low");
             self.token.internal_register_account(&who);
-            refund = refund.saturating_sub(min);
         }
         self.faucet_claimed.insert(who.clone());
         self.faucet_pool -= amount;
         self.pay_from_contract(&who, amount);
         self.push_log(LogKind::Faucet, Some(who.clone()), amount, None);
-        refund_near(&who, refund);
+        self.flush_for_measure();
+        let cost = env::storage_byte_cost().saturating_mul((env::storage_usage() - before) as u128);
+        let attached = env::attached_deposit();
+        require!(attached >= cost, "deposit_low");
+        refund_near(&who, attached.saturating_sub(cost));
         U128(amount)
     }
 
@@ -370,6 +373,12 @@ impl Contract {
 // Internal money movements. Every token that leaves the contract account goes
 // through one of these, so the log and `burned_total` stay complete.
 impl Contract {
+    /// `store::Vector` writes on flush (`LookupSet` and the FT map write at once);
+    /// flush it so `storage_usage` is current.
+    fn flush_for_measure(&mut self) {
+        self.log.flush();
+    }
+
     /// M-4: normalized lines, or a panic with the `DataError` code.
     fn checked_lines(&self, text: &str) -> Vec<String> {
         let lines = normalize_lines(text);
