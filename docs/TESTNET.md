@@ -105,3 +105,23 @@ Kedua run selesai dengan exit 0. Run 2 melewati faucet karena saldo sudah ada, d
 | Parameter | `scripts/params.testnet.json` (`appraisal_fee` 50 TAKSIR); `get_params` identik |
 
 `v1` tetap ada di testnet sebagai arsip dari opsi A. Kontrak yang dipakai mulai sekarang adalah `v2`.
+
+### E2E pada `v2` (2026-11-11, secret di-whitelist `v2.spade-taksir.testnet,spade-taksir.testnet --direct`)
+
+Kedua run selesai dengan exit 0, dan I-2 terpenuhi di akhir masing-masing.
+
+| Run | Langkah | Transaksi | Hasil |
+|---|---|---|---|
+| 1 | faucet | `DD5RmAdCF5ex6oDBd3NbHLurPG8czQKrGBt33pAN8ThX` | +500 TAKSIR |
+| 1 | taksir data normal (#0) | `FBq85bkGjSKFRq5m422eVPvJLbac5KVifyrbtA9CvC42` | `Priced` 1500 |
+| 1 | sidak #0, urutan diacak | `FyLATx5rxMzVHrR515nU5zNxdkPoACvwGgDGtPGbBaLp` | `Survived` (1500 vs 1500) |
+| 1 | taksir a02 + baris unik (#1) | `FEvDdhkYM9oc3KcSjCpJYjXgzJ7dZh1q3tqKQPc8Hbbx` | `Priced` 10000: injeksi berhasil |
+| 1 | sidak #1, urutan dibalik | `4CgPL5MCXFUXVfdaUAe5KxKooTRdMZ9k1brUtgonFpxV` | **`Caught`** (1 vs 10000), reward 50 |
+| 2 | faucet | (dilewati, saldo 425 TAKSIR) | — |
+| 2 | taksir data normal (#2) | `CjUqLPRLxfk3g6tpASoL7YVFGzCJhJLMa1QUCk9xkQVK` | `Priced` 2500 |
+| 2 | sidak #2, urutan diacak | `FharZamoXWm1GjAeWdizFELaFqTcvGQhE5VmQk7xQu8q` | `Survived` (1500 vs 2500, selisih 40%) |
+| 2 | taksir a02 + baris unik (#3) | `3CDpaJqhfH2br18AEtV7L4pXKimowtRjnR87QVys2hYJ` | `Priced` 10000 |
+| 2 | sidak #3, urutan dibalik | `A3ob9vDX1isKKUaMDcAtKNUyzWS4eEopKasa5Wsd4aCi` | **`Caught`** (1 vs 10000), reward 50 |
+
+- **Opsi B terbukti on-chain.** Penanda tangan yang sama menaksir data jebakan lalu menyidaknya sendiri. Setiap siklus seperti itu: fee −50 (dibakar), stake 25 kembali, reward +50. Untung bersihnya 0 TAKSIR, ditambah biaya sekitar 0,10 NEAR. Ini sesuai D-15: farming data sendiri tidak menguntungkan, sedangkan menangkap jebakan buatan orang lain tetap mendapat 50 TAKSIR.
+- **Refund `exec_deposit` dari `outlayer.testnet`** ke pengguna sebesar 0,005961–0,005989 NEAR per eksekusi, sama dengan v1.
