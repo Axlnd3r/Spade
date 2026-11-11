@@ -107,6 +107,18 @@ mod tests {
         assert_eq!(parsed(&s)["r"].as_str().unwrap(), r);
     }
 
+    /// Sizes measured on 2026-11-11: chat id 45, address 42, signature 132 chars.
+    #[test]
+    fn real_sizes_fit_without_cutting() {
+        let r = "x".repeat(140);
+        let c = format!("chatcmpl-{}", "8072ce3f-08e5-4625-8d54-b2ea1bd79a85");
+        let (a, g) = (format!("0x{}", "a".repeat(40)), format!("0x{}", "b".repeat(130)));
+        assert_eq!((c.len(), a.len(), g.len()), (45, 42, 132));
+        let s = render_ok(&priced(&r, &c, &a, &g));
+        assert!(s.len() <= MAX_STDOUT, "{} bytes", s.len());
+        assert_eq!(parsed(&s)["r"].as_str().unwrap(), r);
+    }
+
     #[test]
     fn render_err_shape() {
         assert_eq!(render_err("no_key"), r#"{"v":1,"err":"no_key"}"#);

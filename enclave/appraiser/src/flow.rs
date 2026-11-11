@@ -30,6 +30,32 @@ fn retryable(r: &Result<HttpResponse, String>) -> bool {
     }
 }
 
+const SIGNATURE_TRIES: usize = 3;
+
+/// `(signing_address, signature)` for `chat_id`, or empty strings. The
+/// signature is cached on the node that served the completion, so another node
+/// can answer 404 for a moment; retry, and give up quietly: the price matters
+/// more than the extra proof.
+fn fetch_signature(http: &dyn Http, key: &str, chat_id: &str) -> (String, String) {
+    let model = crate::request::MODEL.replace('/', "%2F");
+    let url = format!("{API_BASE}/signature/{chat_id}?model={model}&signing_algo=ecdsa");
+    let headers = [("Authorization", format!("Bearer {key}"))];
+    for attempt in 0..SIGNATURE_TRIES {
+        if attempt > 0 {
+            http.sleep_ms(RETRY_DELAY_MS);
+        }
+        let Ok(res) = http.get(&url, &headers) else { continue };
+        if res.status != 200 {
+            continue;
+        }
+        let Ok(v) = serde_json::from_slice::<Value>(&res.body) else { continue };
+        if let (Some(a), Some(g)) = (v["signing_address"].as_str(), v["signature"].as_str()) {
+            return (a.to_string(), g.to_string());
+        }
+    }
+    (String::new(), String::new())
+}
+
 /// `(content, chat_id)` from a chat completion response body.
 fn read_completion(body: &[u8]) -> Option<(String, String)> {
     let v: Value = serde_json::from_slice(body).ok()?;
@@ -79,8 +105,9 @@ pub fn run(stdin: &[u8], api_key: Option<&str>, http: &dyn Http) -> String {
     };
     // The model never sees the key, but never echo it even if it shows up.
     let reason = reply.reason.replace(key, "");
+    let (a, g) = fetch_signature(http, key, &chat_id);
     let h = raw_hash_hex(&lines);
-    render_ok(&Priced { h: &h, p: reply.price, r: &reason, c: &chat_id, a: "", g: "" })
+    render_ok(&Priced { h: &h, p: reply.price, r: &reason, c: &chat_id, a: &a, g: &g })
 }
 
 #[cfg(test)]
@@ -206,6 +233,7 @@ pub(crate) mod tests {
     fn retries_once_on_5xx() {
         let http = FakeHttp::default();
         http.post_reply(503, "busy").post_reply(200, &completion(r#"{"price": 9}"#));
+        http.get_reply(200, SIGNATURE);
         assert_eq!(out(&run(&stdin(), Some(KEY), &http))["p"].as_u64(), Some(9));
         assert_eq!((http.posts_sent(), http.sleeps.borrow().clone()), (2, vec![1000]));
 
@@ -238,6 +266,55 @@ pub(crate) mod tests {
             http.post_reply(200, &body);
             assert_eq!(err_of(&stdin(), Some(KEY), &http), "ai_reply", "{body}");
         }
+    }
+
+    pub const SIGNATURE: &str = r#"{"text":"m:a:b","signature":"0xabc","signing_address":"0xdef","signing_algo":"ecdsa","signature_kind":"provider_tee"}"#;
+
+    fn priced_http() -> FakeHttp {
+        let http = FakeHttp::default();
+        http.post_reply(200, &completion(r#"{"price": 300, "reason": "ok"}"#));
+        http
+    }
+
+    #[test]
+    fn signature_filled() {
+        let http = priced_http();
+        http.get_reply(200, SIGNATURE);
+        let v = out(&run(&stdin(), Some(KEY), &http));
+        assert_eq!((v["a"].as_str(), v["g"].as_str(), v["p"].as_u64()), (Some("0xdef"), Some("0xabc"), Some(300)));
+        let sent = http.sent.borrow();
+        let get = sent.iter().find(|s| s.method == "GET").unwrap();
+        assert_eq!(
+            get.url,
+            "https://cloud-api.near.ai/v1/signature/chatcmpl-1?model=Qwen%2FQwen3-VL-30B-A3B-Instruct&signing_algo=ecdsa"
+        );
+        assert!(get.headers.iter().any(|(k, v)| k == "Authorization" && v == "Bearer sk-SECRET-XYZ"));
+    }
+
+    #[test]
+    fn signature_retries_404() {
+        let http = priced_http();
+        http.get_reply(404, "Chat id not found or expired").get_reply(404, "nope").get_reply(200, SIGNATURE);
+        let v = out(&run(&stdin(), Some(KEY), &http));
+        assert_eq!(v["g"].as_str(), Some("0xabc"));
+        assert_eq!((http.gets_sent(), http.sleeps.borrow().clone()), (3, vec![1000, 1000]));
+    }
+
+    #[test]
+    fn signature_gives_up_after_3() {
+        let http = priced_http();
+        http.get_reply(404, "x").get_reply(500, "x").get_reply(404, "x").get_reply(200, SIGNATURE);
+        let v = out(&run(&stdin(), Some(KEY), &http));
+        assert_eq!((v["p"].as_u64(), v["a"].as_str(), v["g"].as_str()), (Some(300), Some(""), Some("")));
+        assert_eq!(http.gets_sent(), 3);
+    }
+
+    #[test]
+    fn signature_bad_json_counts_as_failure() {
+        let http = priced_http();
+        http.get_reply(200, "x").get_reply(200, r#"{"signature":"0xabc"}"#).get_reply(200, SIGNATURE);
+        assert_eq!(out(&run(&stdin(), Some(KEY), &http))["a"].as_str(), Some("0xdef"));
+        assert_eq!(http.gets_sent(), 3);
     }
 
     #[test]
