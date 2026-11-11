@@ -34,3 +34,4 @@
   - Usulan `threshold_bps` 7500 (data biasa 10%). Rinciannya di `docs/EXPERIMENT.md`.
 - **CHECKPOINT 1:** manusia memutuskan SIDAK dilanjutkan dengan `threshold_bps` 7500 (D-10).
 - Plan Section 2 ditulis: `docs/superpowers/plans/2026-11-11-section-2-contract.md`.
+- S2-T1..T7: kontrak `contracts/taksir` dan `contracts/mock-outlayer` selesai. Unit test 63/63 dan sandbox 15/15. Build `cargo near build non-reproducible-wasm` menghasilkan `taksir.wasm` sebesar 261.638 byte.
