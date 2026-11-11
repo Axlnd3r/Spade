@@ -368,3 +368,122 @@ p {
     display: none;
   }
 }
+
+/* ---- home & lists ---- */
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 640px;
+  min-height: calc(100vh - 240px);
+  justify-content: center;
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 760px;
+}
+.row--between {
+  justify-content: space-between;
+}
+.link-quiet {
+  font-size: 13px;
+  letter-spacing: 0.132em;
+  color: var(--ash);
+  text-decoration: none;
+  padding: 12px 4px;
+}
+.link-quiet:hover {
+  color: var(--white);
+}
+.notice {
+  border: var(--hairline);
+  padding: 14px 18px;
+  font-size: 14px;
+  color: var(--fog);
+  background: rgba(0, 0, 0, 0.6);
+}
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 28px;
+}
+.steps li {
+  border-top: var(--hairline);
+  padding-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.steps h3 {
+  margin: 0;
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: 0.1em;
+}
+.steps p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--fog);
+}
+.steps__n {
+  font-size: 12px;
+  color: var(--ash);
+  letter-spacing: 0.188em;
+}
+.case-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: var(--hairline);
+}
+.case-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: var(--hairline);
+  color: var(--white);
+  text-decoration: none;
+  background: rgba(0, 0, 0, 0.45);
+}
+.case-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.case-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.case-row__title {
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.case-row__meta {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--ash);
+}
+.case-row__price {
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+}
+@media (max-width: 640px) {
+  .case-row {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+  }
+  .case-row .tag {
+    grid-column: 2 / 4;
+    justify-self: start;
+  }
+}

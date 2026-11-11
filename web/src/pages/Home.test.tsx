@@ -1,0 +1,58 @@
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import Home from "./Home";
+
+vi.mock("../chain/rpc", () => ({ view: vi.fn() }));
+import { view } from "../chain/rpc";
+
+// v2 after the S4 e2e runs.
+const STATS = {
+  total_supply: "99999750000000000000000000",
+  burned_total: "250000000000000000000",
+  treasury: "59999700000000000000000000",
+  faucet_pool: "39999500000000000000000000",
+  escrow: "0",
+  epoch_index: 1,
+  epoch_by_time: 1,
+  budget: "299998500000000000000",
+  budget_left: "199998500000000000000",
+  epoch_challenges: 2,
+  epoch_catches: 2,
+  clean_streak: 0,
+  best_streak: 0,
+  appraisal_count: 4,
+  challenge_count: 4,
+  log_count: 12,
+};
+
+function renderHome() {
+  return render(
+    <MemoryRouter>
+      <Home />
+    </MemoryRouter>,
+  );
+}
+
+afterEach(() => vi.mocked(view).mockReset());
+
+test("home_renders_live_stats", async () => {
+  vi.mocked(view).mockImplementation(async (method: string) => {
+    if (method === "get_stats") return STATS;
+    if (method === "get_params") return { epoch_ms: 600000, challenge_window_ms: 3600000 };
+    if (method === "get_log") return [{ kind: "Mint", ts_ms: 1794384000000, amount: "0", account_id: null, ref_id: null }];
+    if (method === "get_appraisals") return [];
+    throw new Error(method);
+  });
+  renderHome();
+  expect(await screen.findByText("99,999,750")).toBeInTheDocument();
+  expect(screen.getByText("250")).toBeInTheDocument();
+  expect(screen.getByText("MINTED SINCE LAUNCH").nextElementSibling).toHaveTextContent("0");
+  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("RUG THE AI, NOT THE HOLDERS.");
+});
+
+test("home_shows_retry_when_rpc_fails", async () => {
+  vi.mocked(view).mockRejectedValue(new Error("network: down"));
+  renderHome();
+  expect(await screen.findByText("Can't reach NEAR testnet. Retrying…")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("RUG THE AI, NOT THE HOLDERS.");
+});

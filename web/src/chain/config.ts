@@ -1,6 +1,8 @@
 export const NETWORK = "testnet" as const;
 export const CONTRACT_ID = "v2.spade-taksir.testnet";
-export const RPC_URL = "https://rpc.testnet.near.org";
+/** Browser-reachable testnet RPCs, tried in order. rpc.testnet.near.org answers CORS
+ * preflights with 429, so it is not used here. */
+export const RPC_URLS = ["https://test.rpc.fastnear.com", "https://archival-rpc.testnet.near.org"];
 export const EXPLORER = "https://testnet.nearblocks.io";
 
 /** Enclave pinned in the contract params (S3, docs/TESTNET.md). */

@@ -1,11 +1,27 @@
-import { CONTRACT_ID, RPC_URL } from "./config";
+import { CONTRACT_ID, RPC_URLS } from "./config";
 
 export class RpcError extends Error {}
 
 async function query<T>(params: Record<string, unknown>): Promise<T> {
+  let lastError: RpcError = new RpcError("no RPC configured");
+  for (const url of RPC_URLS) {
+    try {
+      return await queryOne<T>(url, params);
+    } catch (e) {
+      // A contract-level error is an answer; only transport failures move on to the next RPC.
+      if (!(e instanceof TransportError)) throw e;
+      lastError = e;
+    }
+  }
+  throw lastError;
+}
+
+class TransportError extends RpcError {}
+
+async function queryOne<T>(url: string, params: Record<string, unknown>): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(RPC_URL, {
+    res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -16,8 +32,9 @@ async function query<T>(params: Record<string, unknown>): Promise<T> {
       }),
     });
   } catch (e) {
-    throw new RpcError(`network: ${(e as Error).message}`);
+    throw new TransportError(`network: ${(e as Error).message}`);
   }
+  if (res.status === 429 || res.status >= 500) throw new TransportError(`HTTP ${res.status}`);
   const body = await res.json().catch(() => ({ error: { message: `HTTP ${res.status}` } }));
   if (body.error) throw new RpcError(body.error.message ?? JSON.stringify(body.error));
   if (body.result?.error) throw new RpcError(String(body.result.error));

@@ -19,3 +19,15 @@ test("view_throws_rpc_error", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: { message: "boom" } }))));
   await expect(view("get_stats")).rejects.toBeInstanceOf(RpcError);
 });
+
+test("view_fails_over_to_the_next_rpc", async () => {
+  const bytes = [...new TextEncoder().encode("7")];
+  const fetchMock = vi
+    .fn()
+    .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+    .mockResolvedValueOnce(new Response(JSON.stringify({ result: { result: bytes } })));
+  vi.stubGlobal("fetch", fetchMock);
+  expect(await view("get_count")).toBe(7);
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  expect(fetchMock.mock.calls[0][0]).not.toBe(fetchMock.mock.calls[1][0]);
+});
