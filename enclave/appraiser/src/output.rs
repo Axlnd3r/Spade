@@ -15,6 +15,9 @@ pub struct Priced<'a> {
     pub c: &'a str,
     pub a: &'a str,
     pub g: &'a str,
+    /// sha256 of the completion response body: the third part of the signed
+    /// text, which a verifier cannot rebuild from the data (review S3, D-13).
+    pub s: &'a str,
 }
 
 #[derive(Serialize)]
@@ -27,6 +30,7 @@ struct Ok<'a> {
     c: &'a str,
     a: &'a str,
     g: &'a str,
+    s: &'a str,
 }
 
 #[derive(Serialize)]
@@ -40,7 +44,7 @@ struct Err<'a> {
 pub fn render_ok(x: &Priced) -> String {
     let mut r = x.r;
     loop {
-        let out = serde_json::to_string(&Ok { v: 1, h: x.h, p: x.p, r, m: MODEL, c: x.c, a: x.a, g: x.g })
+        let out = serde_json::to_string(&Ok { v: 1, h: x.h, p: x.p, r, m: MODEL, c: x.c, a: x.a, g: x.g, s: x.s })
             .expect("serializing plain strings cannot fail");
         if out.len() <= MAX_STDOUT || r.is_empty() {
             return out;
@@ -60,10 +64,11 @@ mod tests {
     use serde_json::Value;
 
     fn priced<'a>(r: &'a str, c: &'a str, a: &'a str, g: &'a str) -> Priced<'a> {
-        Priced { h: H, p: 10_000, r, c, a, g }
+        Priced { h: H, p: 10_000, r, c, a, g, s: S }
     }
 
     const H: &str = "42064da518ab63d9fbf594e39f6147ee429d6c1637b0855b4894f7a6d68d2df1";
+    const S: &str = "00422104fb7dec2b179b81a6682d76554201f39efbba47bfed4646b1beacd873";
 
     fn parsed(s: &str) -> Value {
         serde_json::from_str(s).unwrap_or_else(|e| panic!("invalid JSON ({e}): {s}"))
@@ -76,8 +81,13 @@ mod tests {
         let v = parsed(&s);
         assert_eq!((v["p"].as_u64(), v["r"].as_str(), v["m"].as_str()), (Some(10_000), Some("ok"), Some(crate::request::MODEL)));
         assert_eq!((v["c"].as_str(), v["a"].as_str(), v["g"].as_str()), (Some("chatcmpl-1"), Some("0xa"), Some("0xg")));
-        let keys: Vec<&str> = v.as_object().unwrap().keys().map(String::as_str).collect();
-        assert_eq!(keys.len(), 8);
+        assert_eq!(v.as_object().unwrap().len(), 9);
+        let at: Vec<usize> = ["v", "h", "p", "r", "m", "c", "a", "g", "s"]
+            .iter()
+            .map(|k| s.find(&format!("\"{k}\":")).unwrap())
+            .collect();
+        assert!(at.windows(2).all(|w| w[0] < w[1]), "keys out of schema order: {s}");
+        assert_eq!(v["s"].as_str(), Some(S));
     }
 
     #[test]

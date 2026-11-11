@@ -127,3 +127,28 @@ Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blue
   10. **`faucet` membayar penyimpanannya sendiri.** Pemanggil membayar setiap byte yang ditulis panggilan itu: registrasi akun, catatan klaim, dan entri log. Lampirkan 0,01 NEAR; kelebihannya dikembalikan. Tanpa ini, klaim dari akun sybil menguras NEAR kontrak sampai callback gagal karena storage staking, dan escrow tertahan selamanya (temuan review S2).
   11. **`new` bersifat `#[private]`.** Hanya akun kontrak sendiri yang bisa menginisialisasi, supaya deploy dan init yang terkirim terpisah tidak bisa didahului pihak lain dengan `outlayer_id` miliknya sendiri. Skrip deploy S4 memanggil `new` dari akun kontrak.
 - **Alasan:** Setiap butir menutup jalur yang membuat token hilang, tertahan, atau tidak tercatat, tanpa mengubah aturan M yang tertulis.
+
+## D-13 Enclave: client HTTP, batas waktu, dan bukti signature (S3 review, 2026-11-11)
+
+- **Konteks:** Review S3 menemukan tiga masalah.
+  1. `wasi-http-client` 0.2.1 menulis seluruh body dalam satu `blocking-write-and-flush`. Batas wasmtime untuk satu panggilan itu 4.096 byte, dan kelebihannya membuat trap. Data sah 1.999 byte (100 baris `"1","2","3","4","5"`) terbukti membuat run berakhir dengan exit 1 tanpa stdout.
+  2. Tidak ada read timeout maupun batas waktu total, padahal OutLayer menghentikan run pada 60 detik.
+  3. `g` tidak bisa diverifikasi dari luar, karena hash respons (bagian ketiga teks yang ditandatangani, D-8) tidak ikut keluar.
+- **Keputusan:**
+  1. **Client sendiri di atas crate `wasi` 0.13** (`src/wasi_http.rs`):
+     - urutannya: request dimulai (`handle`), body ditulis per potongan 4.096 byte, lalu `finish`;
+     - header `content-length` dikirim;
+     - timeout connect 10 detik, first-byte dan between-bytes mengikuti timeout per panggilan;
+     - body respons dibatasi 1 MB;
+     - header respons yang bukan UTF-8 tidak lagi menggagalkan respons.
+
+     Dicek di level wasm oleh `enclave/appraiser/scripts/wasm-http-check.sh` (100 byte sampai 70 KB).
+  2. **Anggaran 50 detik per run:**
+     - completion 25 detik;
+     - retry completion hanya kalau masih bisa dimulai sebelum detik ke-20;
+     - signature maksimal 5 detik per percobaan, dipotong ke sisa anggaran;
+     - percobaan signature baru tidak dimulai kalau sisa waktu kurang dari 1 detik.
+  3. **Kunci output tambahan `s` = sha256 body respons AI.** Enclave hanya mengisi `a` dan `g` kalau `text` signature persis `MODEL:sha256(body request):s`. Dengan begitu, siapa pun bisa memverifikasi dari luar: hitung ulang hash request dari `prompt.txt` dan data, ambil `s` dari output, lalu recover EIP-191 terhadap `a`. `parse_output` di kontrak mengabaikan kunci yang tidak dikenal (test `parse_output_ignores_extra_keys`). Apakah `s` disimpan on-chain diputuskan di S4.
+- **Alasan:**
+  - Keputusan 1 dan 2 mencegah run yang mati tanpa output.
+  - Keputusan 3 memenuhi tujuan blueprint: field `c`, `a`, `g` ada "supaya bisa diverifikasi di luar".

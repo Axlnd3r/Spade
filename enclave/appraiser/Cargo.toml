@@ -20,7 +20,7 @@ serde_json = "1"
 sha2 = "0.11"
 
 [target.'cfg(target_os = "wasi")'.dependencies]
-wasi-http-client = "0.2.1"
+wasi = "0.13"
 
 [profile.release]
 codegen-units = 1

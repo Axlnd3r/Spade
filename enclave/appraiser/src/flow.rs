@@ -2,10 +2,10 @@
 //! tested natively. Always returns one JSON line and never panics: a panic in
 //! the enclave writes nothing and OutLayer reports a bare failure.
 
-use crate::data::{normalize_lines, raw_hash_hex};
+use crate::data::{normalize_lines, raw_hash_hex, sha256_hex};
 use crate::output::{render_err, render_ok, Priced};
 use crate::reply::parse_reply;
-use crate::request::{completion_body, API_BASE};
+use crate::request::{completion_body, API_BASE, MODEL};
 use serde_json::Value;
 
 pub struct HttpResponse {
@@ -14,14 +14,28 @@ pub struct HttpResponse {
 }
 
 pub trait Http {
-    fn post(&self, url: &str, headers: &[(&str, String)], body: &[u8]) -> Result<HttpResponse, String>;
-    fn get(&self, url: &str, headers: &[(&str, String)]) -> Result<HttpResponse, String>;
+    /// `timeout_ms` bounds the whole exchange, so a stalled server cannot outlive the budget.
+    fn post(&self, url: &str, headers: &[(&str, String)], body: &[u8], timeout_ms: u64) -> Result<HttpResponse, String>;
+    fn get(&self, url: &str, headers: &[(&str, String)], timeout_ms: u64) -> Result<HttpResponse, String>;
     fn sleep_ms(&self, ms: u64);
+    /// A monotonic clock in milliseconds; only differences are used.
+    fn now_ms(&self) -> u64;
 }
 
 /// Real input is `{"data": "<= 2000 bytes"}`; anything far larger is not from the contract.
 pub const MAX_STDIN: usize = 65_536;
 const RETRY_DELAY_MS: u64 = 1000;
+
+/// OutLayer stops the run at 60 s and then nothing is written, so all network
+/// work fits in this budget with room to spare.
+pub const BUDGET_MS: u64 = 50_000;
+pub const COMPLETION_TIMEOUT_MS: u64 = 25_000;
+/// A failed completion is retried only if the retry still starts before this.
+const RETRY_BEFORE_MS: u64 = 20_000;
+pub const SIGNATURE_TIMEOUT_MS: u64 = 5_000;
+/// No signature request is started with less than this left.
+const MIN_REQUEST_MS: u64 = 1_000;
+const SIGNATURE_TRIES: usize = 3;
 
 fn retryable(r: &Result<HttpResponse, String>) -> bool {
     match r {
@@ -30,26 +44,39 @@ fn retryable(r: &Result<HttpResponse, String>) -> bool {
     }
 }
 
-const SIGNATURE_TRIES: usize = 3;
-
-/// `(signing_address, signature)` for `chat_id`, or empty strings. The
-/// signature is cached on the node that served the completion, so another node
-/// can answer 404 for a moment; retry, and give up quietly: the price matters
-/// more than the extra proof.
-fn fetch_signature(http: &dyn Http, key: &str, chat_id: &str) -> (String, String) {
-    let model = crate::request::MODEL.replace('/', "%2F");
+/// `(signing_address, signature)` for `chat_id`, or empty strings.
+///
+/// Kept only when the signed text is `MODEL:sha256(request):sha256(response)`
+/// for the exact bytes this run sent and received (D-8), so it proves this
+/// price. The signature is cached on the node that served the completion,
+/// so another node can answer 404 for a moment: retry within the budget, then
+/// give up quietly; the price matters more than the extra proof.
+fn fetch_signature(http: &dyn Http, key: &str, chat_id: &str, expected_text: &str, deadline: u64) -> (String, String) {
+    let model = MODEL.replace('/', "%2F");
     let url = format!("{API_BASE}/signature/{chat_id}?model={model}&signing_algo=ecdsa");
     let headers = [("Authorization", format!("Bearer {key}"))];
+    let left = || deadline.saturating_sub(http.now_ms());
     for attempt in 0..SIGNATURE_TRIES {
         if attempt > 0 {
+            if left() < RETRY_DELAY_MS + MIN_REQUEST_MS {
+                break;
+            }
             http.sleep_ms(RETRY_DELAY_MS);
         }
-        let Ok(res) = http.get(&url, &headers) else { continue };
+        if left() < MIN_REQUEST_MS {
+            break;
+        }
+        let Ok(res) = http.get(&url, &headers, SIGNATURE_TIMEOUT_MS.min(left())) else { continue };
         if res.status != 200 {
             continue;
         }
         let Ok(v) = serde_json::from_slice::<Value>(&res.body) else { continue };
-        if let (Some(a), Some(g)) = (v["signing_address"].as_str(), v["signature"].as_str()) {
+        if let (Some(text), Some(a), Some(g)) =
+            (v["text"].as_str(), v["signing_address"].as_str(), v["signature"].as_str())
+        {
+            if text != expected_text {
+                break;
+            }
             return (a.to_string(), g.to_string());
         }
     }
@@ -86,12 +113,15 @@ pub fn run(stdin: &[u8], api_key: Option<&str>, http: &dyn Http) -> String {
         ("x-no-aliasing", "true".to_string()),
         ("Accept-Encoding", "identity".to_string()),
     ];
+    let start = http.now_ms();
+    let deadline = start + BUDGET_MS;
     let url = format!("{API_BASE}/chat/completions");
     let body = completion_body(&lines);
-    let mut res = http.post(&url, &headers, &body);
-    if retryable(&res) {
+    let mut res = http.post(&url, &headers, &body, COMPLETION_TIMEOUT_MS);
+    if retryable(&res) && http.now_ms() + RETRY_DELAY_MS < start + RETRY_BEFORE_MS {
         http.sleep_ms(RETRY_DELAY_MS);
-        res = http.post(&url, &headers, &body);
+        let left = deadline.saturating_sub(http.now_ms());
+        res = http.post(&url, &headers, &body, COMPLETION_TIMEOUT_MS.min(left));
     }
     let res = match res {
         Ok(r) if (200..300).contains(&r.status) => r,
@@ -105,18 +135,20 @@ pub fn run(stdin: &[u8], api_key: Option<&str>, http: &dyn Http) -> String {
     };
     // The model never sees the key, but never echo it even if it shows up.
     let reason = reply.reason.replace(key, "");
-    let (a, g) = fetch_signature(http, key, &chat_id);
+    let s = sha256_hex(&res.body);
+    let expected_text = format!("{MODEL}:{}:{s}", sha256_hex(&body));
+    let (a, g) = fetch_signature(http, key, &chat_id, &expected_text, deadline);
     let h = raw_hash_hex(&lines);
-    render_ok(&Priced { h: &h, p: reply.price, r: &reason, c: &chat_id, a: &a, g: &g })
+    render_ok(&Priced { h: &h, p: reply.price, r: &reason, c: &chat_id, a: &a, g: &g, s: &s })
 }
 
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::data::{normalize_lines, raw_hash_hex};
+    use crate::data::{normalize_lines, raw_hash_hex, sha256_hex};
     use crate::request::{completion_body, MODEL};
     use serde_json::{json, Value};
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
     use std::collections::VecDeque;
 
     pub const KEY: &str = "sk-SECRET-XYZ";
@@ -127,23 +159,40 @@ pub(crate) mod tests {
         pub url: String,
         pub headers: Vec<(String, String)>,
         pub body: Vec<u8>,
+        pub timeout_ms: u64,
+        pub at_ms: u64,
     }
 
+    type Scripted = (u64, Result<HttpResponse, String>);
+
+    /// Scripted replies, each taking `latency` ms on a fake clock. A reply
+    /// slower than the call's timeout becomes a "timeout" error at the timeout.
     #[derive(Default)]
     pub struct FakeHttp {
-        pub posts: RefCell<VecDeque<Result<HttpResponse, String>>>,
-        pub gets: RefCell<VecDeque<Result<HttpResponse, String>>>,
+        pub posts: RefCell<VecDeque<Scripted>>,
+        pub gets: RefCell<VecDeque<Scripted>>,
         pub sent: RefCell<Vec<Sent>>,
         pub sleeps: RefCell<Vec<u64>>,
+        pub now: Cell<u64>,
+    }
+
+    fn reply(status: u16, body: &str) -> Result<HttpResponse, String> {
+        Ok(HttpResponse { status, body: body.as_bytes().to_vec() })
     }
 
     impl FakeHttp {
         pub fn post_reply(&self, status: u16, body: &str) -> &Self {
-            self.posts.borrow_mut().push_back(Ok(HttpResponse { status, body: body.as_bytes().to_vec() }));
+            self.post_after(0, status, body)
+        }
+        pub fn post_after(&self, latency_ms: u64, status: u16, body: &str) -> &Self {
+            self.posts.borrow_mut().push_back((latency_ms, reply(status, body)));
             self
         }
         pub fn get_reply(&self, status: u16, body: &str) -> &Self {
-            self.gets.borrow_mut().push_back(Ok(HttpResponse { status, body: body.as_bytes().to_vec() }));
+            self.get_after(0, status, body)
+        }
+        pub fn get_after(&self, latency_ms: u64, status: u16, body: &str) -> &Self {
+            self.gets.borrow_mut().push_back((latency_ms, reply(status, body)));
             self
         }
         pub fn posts_sent(&self) -> usize {
@@ -152,27 +201,35 @@ pub(crate) mod tests {
         pub fn gets_sent(&self) -> usize {
             self.sent.borrow().iter().filter(|s| s.method == "GET").count()
         }
-        fn record(&self, method: &'static str, url: &str, headers: &[(&str, String)], body: &[u8]) {
+        fn answer(&self, method: &'static str, url: &str, headers: &[(&str, String)], body: &[u8], timeout_ms: u64) -> Result<HttpResponse, String> {
             let headers = headers.iter().map(|(k, v)| (k.to_string(), v.clone())).collect();
-            self.sent.borrow_mut().push(Sent { method, url: url.to_string(), headers, body: body.to_vec() });
+            let at_ms = self.now.get();
+            self.sent.borrow_mut().push(Sent { method, url: url.to_string(), headers, body: body.to_vec(), timeout_ms, at_ms });
+            let queue = if method == "POST" { &self.posts } else { &self.gets };
+            let (latency, result) = queue.borrow_mut().pop_front().unwrap_or((0, Err(format!("no scripted {method}"))));
+            self.now.set(at_ms + latency.min(timeout_ms));
+            if latency > timeout_ms { Err("timeout".to_string()) } else { result }
         }
     }
 
     impl Http for FakeHttp {
-        fn post(&self, url: &str, headers: &[(&str, String)], body: &[u8]) -> Result<HttpResponse, String> {
-            self.record("POST", url, headers, body);
-            self.posts.borrow_mut().pop_front().unwrap_or_else(|| Err("no scripted POST".to_string()))
+        fn post(&self, url: &str, headers: &[(&str, String)], body: &[u8], timeout_ms: u64) -> Result<HttpResponse, String> {
+            self.answer("POST", url, headers, body, timeout_ms)
         }
-        fn get(&self, url: &str, headers: &[(&str, String)]) -> Result<HttpResponse, String> {
-            self.record("GET", url, headers, &[]);
-            self.gets.borrow_mut().pop_front().unwrap_or_else(|| Err("no scripted GET".to_string()))
+        fn get(&self, url: &str, headers: &[(&str, String)], timeout_ms: u64) -> Result<HttpResponse, String> {
+            self.answer("GET", url, headers, &[], timeout_ms)
         }
         fn sleep_ms(&self, ms: u64) {
             self.sleeps.borrow_mut().push(ms);
+            self.now.set(self.now.get() + ms);
+        }
+        fn now_ms(&self) -> u64 {
+            self.now.get()
         }
     }
 
     pub const DATA: &str = "espresso 3\nlatte 4\nmocha 5\ntea 2\nwater 1";
+    const PRICED: &str = r#"{"price": 300, "reason": "ok"}"#;
 
     pub fn stdin() -> Vec<u8> {
         json!({ "data": DATA }).to_string().into_bytes()
@@ -182,8 +239,16 @@ pub(crate) mod tests {
         json!({ "id": "chatcmpl-1", "choices": [{ "message": { "role": "assistant", "content": content } }] }).to_string()
     }
 
+    /// A signature whose `text` binds this request (DATA) and `response` (D-8).
+    pub fn signature_for(response: &str) -> String {
+        let req = sha256_hex(&completion_body(&normalize_lines(DATA)));
+        let text = format!("{MODEL}:{req}:{}", sha256_hex(response.as_bytes()));
+        json!({ "text": text, "signature": "0xabc", "signing_address": "0xdef", "signing_algo": "ecdsa", "signature_kind": "provider_tee" }).to_string()
+    }
+
     pub fn out(s: &str) -> Value {
         assert!(!s.contains("SECRET"), "key leaked: {s}");
+        assert!(s.len() <= crate::output::MAX_STDOUT, "{} bytes", s.len());
         serde_json::from_str(s).unwrap_or_else(|e| panic!("invalid JSON ({e}): {s}"))
     }
 
@@ -212,12 +277,14 @@ pub(crate) mod tests {
     #[test]
     fn success_shape() {
         let http = FakeHttp::default();
-        http.post_reply(200, &completion(r#"{"price": 300, "reason": "ok"}"#));
+        let response = completion(PRICED);
+        http.post_reply(200, &response);
         let v = out(&run(&stdin(), Some(KEY), &http));
         let lines = normalize_lines(DATA);
         assert_eq!((v["p"].as_u64(), v["r"].as_str()), (Some(300), Some("ok")));
         assert_eq!(v["h"].as_str().unwrap(), raw_hash_hex(&lines));
         assert_eq!((v["c"].as_str(), v["m"].as_str()), (Some("chatcmpl-1"), Some(MODEL)));
+        assert_eq!(v["s"].as_str().unwrap(), sha256_hex(response.as_bytes()), "s = sha256 of the response body");
         let sent = http.sent.borrow();
         let post = sent.iter().find(|s| s.method == "POST").unwrap();
         assert_eq!(post.url, "https://cloud-api.near.ai/v1/chat/completions");
@@ -232,8 +299,9 @@ pub(crate) mod tests {
     #[test]
     fn retries_once_on_5xx() {
         let http = FakeHttp::default();
-        http.post_reply(503, "busy").post_reply(200, &completion(r#"{"price": 9}"#));
-        http.get_reply(200, SIGNATURE);
+        let response = completion(r#"{"price": 9}"#);
+        http.post_reply(503, "busy").post_reply(200, &response);
+        http.get_reply(200, &signature_for(&response));
         assert_eq!(out(&run(&stdin(), Some(KEY), &http))["p"].as_u64(), Some(9));
         assert_eq!((http.posts_sent(), http.sleeps.borrow().clone()), (2, vec![1000]));
 
@@ -246,7 +314,7 @@ pub(crate) mod tests {
     #[test]
     fn retries_once_on_transport_error() {
         let http = FakeHttp::default();
-        http.posts.borrow_mut().push_back(Err("connection reset".to_string()));
+        http.posts.borrow_mut().push_back((0, Err("connection reset".to_string())));
         http.post_reply(200, &completion(r#"{"price": 9}"#));
         assert_eq!(out(&run(&stdin(), Some(KEY), &http))["p"].as_u64(), Some(9));
     }
@@ -268,18 +336,17 @@ pub(crate) mod tests {
         }
     }
 
-    pub const SIGNATURE: &str = r#"{"text":"m:a:b","signature":"0xabc","signing_address":"0xdef","signing_algo":"ecdsa","signature_kind":"provider_tee"}"#;
-
-    fn priced_http() -> FakeHttp {
+    fn priced_http() -> (FakeHttp, String) {
         let http = FakeHttp::default();
-        http.post_reply(200, &completion(r#"{"price": 300, "reason": "ok"}"#));
-        http
+        let response = completion(PRICED);
+        http.post_reply(200, &response);
+        (http, response)
     }
 
     #[test]
     fn signature_filled() {
-        let http = priced_http();
-        http.get_reply(200, SIGNATURE);
+        let (http, response) = priced_http();
+        http.get_reply(200, &signature_for(&response));
         let v = out(&run(&stdin(), Some(KEY), &http));
         assert_eq!((v["a"].as_str(), v["g"].as_str(), v["p"].as_u64()), (Some("0xdef"), Some("0xabc"), Some(300)));
         let sent = http.sent.borrow();
@@ -292,9 +359,22 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn signature_over_other_bytes_is_dropped() {
+        // Review S3 Important-3: a signature that does not bind this exact
+        // request and response proves nothing about this price.
+        for other in [signature_for("some other response"), signature_for(&completion(PRICED)).replace(MODEL, "other/model")] {
+            let (http, _) = priced_http();
+            http.get_reply(200, &other);
+            let v = out(&run(&stdin(), Some(KEY), &http));
+            assert_eq!((v["p"].as_u64(), v["a"].as_str(), v["g"].as_str()), (Some(300), Some(""), Some("")));
+            assert_eq!(http.gets_sent(), 1, "a mismatch is final, not retried");
+        }
+    }
+
+    #[test]
     fn signature_retries_404() {
-        let http = priced_http();
-        http.get_reply(404, "Chat id not found or expired").get_reply(404, "nope").get_reply(200, SIGNATURE);
+        let (http, response) = priced_http();
+        http.get_reply(404, "Chat id not found or expired").get_reply(404, "nope").get_reply(200, &signature_for(&response));
         let v = out(&run(&stdin(), Some(KEY), &http));
         assert_eq!(v["g"].as_str(), Some("0xabc"));
         assert_eq!((http.gets_sent(), http.sleeps.borrow().clone()), (3, vec![1000, 1000]));
@@ -302,8 +382,8 @@ pub(crate) mod tests {
 
     #[test]
     fn signature_gives_up_after_3() {
-        let http = priced_http();
-        http.get_reply(404, "x").get_reply(500, "x").get_reply(404, "x").get_reply(200, SIGNATURE);
+        let (http, response) = priced_http();
+        http.get_reply(404, "x").get_reply(500, "x").get_reply(404, "x").get_reply(200, &signature_for(&response));
         let v = out(&run(&stdin(), Some(KEY), &http));
         assert_eq!((v["p"].as_u64(), v["a"].as_str(), v["g"].as_str()), (Some(300), Some(""), Some("")));
         assert_eq!(http.gets_sent(), 3);
@@ -311,10 +391,51 @@ pub(crate) mod tests {
 
     #[test]
     fn signature_bad_json_counts_as_failure() {
-        let http = priced_http();
-        http.get_reply(200, "x").get_reply(200, r#"{"signature":"0xabc"}"#).get_reply(200, SIGNATURE);
+        let (http, response) = priced_http();
+        http.get_reply(200, "x").get_reply(200, r#"{"signature":"0xabc"}"#).get_reply(200, &signature_for(&response));
         assert_eq!(out(&run(&stdin(), Some(KEY), &http))["a"].as_str(), Some("0xdef"));
         assert_eq!(http.gets_sent(), 3);
+    }
+
+    // Review S3 Important-2: OutLayer kills the run at 60 s and then nothing
+    // is written, so the enclave keeps its own 50 s budget.
+
+    #[test]
+    fn completion_timeouts_fit_the_budget() {
+        let http = FakeHttp::default();
+        http.post_after(60_000, 200, "never").post_after(60_000, 200, "never");
+        assert_eq!(err_of(&stdin(), Some(KEY), &http), "ai_http");
+        let sent = http.sent.borrow();
+        assert_eq!(sent[0].timeout_ms, COMPLETION_TIMEOUT_MS);
+        assert!(http.now_ms() <= BUDGET_MS, "spent {} ms", http.now_ms());
+    }
+
+    #[test]
+    fn slow_failure_is_not_retried() {
+        let http = FakeHttp::default();
+        http.post_after(21_000, 503, "busy").post_reply(200, &completion(PRICED));
+        assert_eq!(err_of(&stdin(), Some(KEY), &http), "ai_http");
+        assert_eq!(http.posts_sent(), 1);
+    }
+
+    /// The slowest path that still prices: a quick failure, the retry, then a
+    /// completion that uses its whole timeout. The signature gets what is left.
+    #[test]
+    fn signature_waits_are_clamped_to_the_budget() {
+        let http = FakeHttp::default();
+        let response = completion(PRICED);
+        http.post_after(18_500, 503, "busy").post_after(COMPLETION_TIMEOUT_MS, 200, &response);
+        for _ in 0..3 {
+            http.get_after(60_000, 200, "never");
+        }
+        let v = out(&run(&stdin(), Some(KEY), &http));
+        assert_eq!((v["p"].as_u64(), v["a"].as_str()), (Some(300), Some("")), "the price is kept");
+        assert_eq!(http.posts_sent(), 2);
+        assert!(http.now_ms() <= BUDGET_MS, "spent {} ms", http.now_ms());
+        let sent = http.sent.borrow();
+        for get in sent.iter().filter(|s| s.method == "GET") {
+            assert!(get.timeout_ms <= SIGNATURE_TIMEOUT_MS && get.at_ms + get.timeout_ms <= BUDGET_MS, "{get:?}");
+        }
     }
 
     #[test]

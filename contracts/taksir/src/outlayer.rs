@@ -78,6 +78,16 @@ mod tests {
         assert_eq!(parse_output(&wrapped, &h(), 1, 10_000), Some(ok));
     }
 
+    /// The enclave also emits `s` (sha256 of the AI response, D-13); unknown keys are ignored.
+    #[test]
+    fn parse_output_ignores_extra_keys() {
+        let mut v = good();
+        v["s"] = json!("cd".repeat(32));
+        v["future"] = json!({"x": 1});
+        let ok = parse_output(&serde_json::to_vec(&v).unwrap(), &h(), 1, 10_000).unwrap();
+        assert_eq!(ok.p, 300);
+    }
+
     #[test]
     fn parse_output_optional_fields_default_empty() {
         let raw = serde_json::to_vec(&json!({"v":1,"h":h(),"p":7})).unwrap();

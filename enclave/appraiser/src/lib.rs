@@ -6,3 +6,5 @@ pub mod flow;
 pub mod output;
 pub mod reply;
 pub mod request;
+#[cfg(target_os = "wasi")]
+pub mod wasi_http;
