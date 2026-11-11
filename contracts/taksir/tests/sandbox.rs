@@ -168,6 +168,15 @@ impl Env {
             .data
     }
 
+    async fn params(&self) -> Value {
+        self.view(&self.taksir, "get_params", json!({})).await
+    }
+
+    /// Bytes the contract account stores, as the runtime charges them.
+    async fn storage_usage(&self) -> u64 {
+        near_api::Account(self.taksir.clone()).view().fetch_from(&self.net).await.unwrap().data.storage_usage
+    }
+
     async fn stats(&self) -> Value {
         self.view(&self.taksir, "get_stats", json!({})).await
     }
@@ -506,4 +515,32 @@ async fn s14_worst_case_fits_the_gas_budget() {
 
     println!("GAS: heaviest receipt appraise {appraise:.1} TGas, challenge {challenge:.1} TGas");
     assert!(appraise < 30.0 && challenge < 30.0, "a callback must stay well inside its 40 TGas");
+}
+
+/// Review Focus 2 (S4): the heaviest appraisal and challenge (2000-byte data,
+/// padded enclave reply) store no more bytes than `storage_fee` pays for.
+#[tokio::test]
+async fn s15_storage_paid_by_storage_fee() {
+    let e = Env::start(json!({})).await;
+    let text: String = (0..100).map(|i| format!("worst case row {i:04}")).collect::<Vec<_>>().join("\n");
+    assert!(text.len() <= 2000 && text.len() > 1900, "{} bytes", text.len());
+    let fee = e.params().await["storage_fee"].as_str().unwrap().parse::<u128>().unwrap();
+
+    let before = e.storage_usage().await;
+    e.push(json!({ "Padded": 100 })).await;
+    e.appraise(&e.alice, &text).await;
+    assert_eq!(e.view(&e.taksir, "get_appraisal", json!({ "id": 0 })).await["status"], "Priced");
+    let appraise = e.storage_usage().await - before;
+
+    let before = e.storage_usage().await;
+    e.push(json!({ "Padded": 9000 })).await;
+    e.challenge(&e.bob, 0, &rotated(&text, 1)).await;
+    let chs = e.view(&e.taksir, "get_challenges", json!({ "appraisal_id": 0 })).await;
+    assert_eq!(chs[0]["status"], "Caught");
+    let challenge = e.storage_usage().await - before;
+
+    println!("STORAGE: appraise {appraise} bytes, challenge {challenge} bytes, storage_fee {fee} yocto");
+    for (what, bytes) in [("appraise", appraise), ("challenge", challenge)] {
+        assert!(bytes as u128 * 10u128.pow(19) <= fee, "{what} stores {bytes} bytes, more than storage_fee pays for");
+    }
 }

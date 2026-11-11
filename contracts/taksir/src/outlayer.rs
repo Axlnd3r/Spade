@@ -5,8 +5,8 @@ use crate::Params;
 use near_sdk::serde_json::{self, json, Value};
 use near_sdk::AccountId;
 
-/// A successful, validated enclave reply. `r`, `m`, `c`, `a`, `g` may be absent
-/// in early enclave builds (blueprint Section 3) and then default to "".
+/// A successful, validated enclave reply. `r`, `m`, `c`, `a`, `g`, `s` may be
+/// absent in early enclave builds (blueprint Section 3) and then default to "".
 #[derive(Debug, PartialEq)]
 pub struct EnclaveOk {
     pub h: String,
@@ -16,6 +16,8 @@ pub struct EnclaveOk {
     pub c: String,
     pub a: String,
     pub g: String,
+    /// sha256 of the NEAR AI response body (D-13), so a verifier can check `g`.
+    pub s: String,
 }
 
 /// M-10: appraisals and challenges send the enclave exactly this shape.
@@ -52,7 +54,16 @@ pub fn parse_output(bytes: &[u8], expected_h: &str, price_min: u32, price_max: u
         return None;
     }
     let field = |k: &str| o.get(k).and_then(Value::as_str).unwrap_or_default().to_string();
-    Some(EnclaveOk { h: h.to_string(), p: p as u32, r: field("r"), m: field("m"), c: field("c"), a: field("a"), g: field("g") })
+    Some(EnclaveOk {
+        h: h.to_string(),
+        p: p as u32,
+        r: field("r"),
+        m: field("m"),
+        c: field("c"),
+        a: field("a"),
+        g: field("g"),
+        s: field("s"),
+    })
 }
 
 #[cfg(test)]
@@ -67,6 +78,16 @@ mod tests {
 
     fn good() -> Value {
         json!({"v":1,"h":h(),"p":300,"r":"ok","m":"model","c":"chat","a":"0xabc","g":"sig"})
+    }
+
+    #[test]
+    fn parse_output_reads_s() {
+        let mut v = good();
+        v["s"] = json!("cd".repeat(32));
+        let ok = parse_output(&serde_json::to_vec(&v).unwrap(), &h(), 1, 10_000).unwrap();
+        assert_eq!(ok.s, "cd".repeat(32));
+        let ok = parse_output(&serde_json::to_vec(&good()).unwrap(), &h(), 1, 10_000).unwrap();
+        assert_eq!(ok.s, "");
     }
 
     #[test]

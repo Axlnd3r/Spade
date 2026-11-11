@@ -181,6 +181,7 @@ impl Contract {
             chat_id: String::new(),
             signing_address: String::new(),
             signature: String::new(),
+            response_hash: String::new(),
             created_ms: env::block_timestamp_ms(),
             priced_ms: None,
             active_challenges: 0,
@@ -209,6 +210,7 @@ impl Contract {
                 ap.chat_id = ok.c;
                 ap.signing_address = ok.a;
                 ap.signature = ok.g;
+                ap.response_hash = ok.s;
                 ap.priced_ms = Some(env::block_timestamp_ms());
                 self.burn_from_contract(fee, LogKind::BurnFee, Some(ap.owner.clone()), Some(id));
             }
@@ -261,6 +263,7 @@ impl Contract {
             chat_id: String::new(),
             signing_address: String::new(),
             signature: String::new(),
+            response_hash: String::new(),
             created_ms: env::block_timestamp_ms(),
             resolved_ms: None,
         });
@@ -294,6 +297,7 @@ impl Contract {
                 ch.chat_id = ok.c;
                 ch.signing_address = ok.a;
                 ch.signature = ok.g;
+                ch.response_hash = ok.s;
                 if ap.status == AppraisalStatus::Caught {
                     ch.status = ChallengeStatus::Voided;
                     self.pay_from_contract(&ch.challenger, stake);

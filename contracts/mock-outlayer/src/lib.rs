@@ -10,7 +10,7 @@ pub enum MockItem {
     /// A well-formed enclave reply with this price, hashed over the data received.
     Price(u32),
     /// Like `Price`, with every field near its realistic maximum (140-char 3-byte
-    /// reason, full model id, chat id, address and signature): the heaviest reply.
+    /// reason, full model id, chat id, address, signature and response hash): the heaviest reply.
     Padded(u32),
     /// This exact stdout.
     Raw(String),
@@ -69,6 +69,7 @@ impl Mock {
                     "c": format!("chatcmpl-{}", "f".repeat(32)),
                     "a": format!("0x{}", "a".repeat(40)),
                     "g": "b".repeat(130),
+                    "s": "c".repeat(64),
                 })
                 .to_string(),
             ),
@@ -124,6 +125,7 @@ mod tests {
         assert!(s.len() > 700 && s.len() <= 900, "{} bytes", s.len());
         let out: Value = serde_json::from_str(&s).unwrap();
         assert_eq!((out["p"].as_u64(), out["r"].as_str().unwrap().chars().count()), (Some(42), 140));
+        assert_eq!(out["s"].as_str().map(str::len), Some(64));
     }
 
     #[test]

@@ -134,6 +134,15 @@ fn challenge_caught() {
 }
 
 #[test]
+fn challenge_stores_response_hash() {
+    let (mut c, id, text, b) = scene(100);
+    let variant = reversed(&text);
+    let cid = challenge_as(&mut c, &b, id, &variant, GENESIS_MS + 10);
+    resolve(&mut c, cid, priced_result(&variant, 110), GENESIS_MS + 11);
+    assert_eq!(c.challenges.get(cid as u32).unwrap().response_hash, "cd".repeat(32));
+}
+
+#[test]
 fn challenge_survived_burns_stake() {
     let (mut c, id, text, b) = scene(100);
     let variant = reversed(&text);

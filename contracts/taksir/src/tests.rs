@@ -135,6 +135,25 @@ fn bad_params_wasm_hash() {
     setup_with(Params { wasm_hash: "xyz".to_string(), ..test_params() });
 }
 
+macro_rules! bad_params_zero {
+    ($($name:ident: $field:ident = $zero:expr;)*) => {$(
+        #[test]
+        #[should_panic(expected = "bad_params")]
+        fn $name() {
+            setup_with(Params { $field: $zero, ..test_params() });
+        }
+    )*};
+}
+
+bad_params_zero! {
+    bad_params_zero_appraisal_fee: appraisal_fee = U128(0);
+    bad_params_zero_challenge_stake: challenge_stake = U128(0);
+    bad_params_zero_faucet_amount: faucet_amount = U128(0);
+    bad_params_zero_exec_deposit: exec_deposit = NearToken::from_yoctonear(0);
+    bad_params_zero_challenge_window: challenge_window_ms = 0;
+    bad_params_zero_reward_multiplier: reward_multiplier = 0;
+}
+
 #[test]
 fn faucet_once() {
     let mut c = setup();
@@ -318,7 +337,7 @@ pub mod appraisals {
     }
 
     pub fn ok_output(text: &str, price: u32) -> Vec<u8> {
-        let out = json!({"v":1,"h":hash_of(text),"p":price,"r":"why","m":"model","c":"chat","a":"0xa","g":"sig"});
+        let out = json!({"v":1,"h":hash_of(text),"p":price,"r":"why","m":"model","c":"chat","a":"0xa","g":"sig","s":"cd".repeat(32)});
         serde_json::to_vec(&serde_json::Value::String(out.to_string())).unwrap()
     }
 
@@ -439,6 +458,15 @@ pub mod appraisals {
         let last = c.log.get(c.log.len() - 1).unwrap();
         assert!(matches!(last.kind, LogKind::BurnFee));
         assert_eq!((last.ref_id, last.amount.0), (Some(id), 10 * ONE));
+    }
+
+    #[test]
+    fn appraise_success_stores_response_hash() {
+        let mut c = setup();
+        let a = user("alice");
+        fund(&mut c, &a, GENESIS_MS + 1);
+        let id = priced(&mut c, &a, &data5("menu"), 300, GENESIS_MS + 2);
+        assert_eq!(c.get_appraisal(id).unwrap().response_hash, "cd".repeat(32));
     }
 
     #[test]

@@ -39,6 +39,13 @@ impl Params {
                 && self.price_min <= self.price_max
                 && (1..=9999).contains(&self.threshold_bps)
                 && self.epoch_ms > 0
+                // A zero here cannot be fixed after `new` and stalls a flow forever (S4 Review Focus 1).
+                && self.appraisal_fee.0 > 0
+                && self.challenge_stake.0 > 0
+                && self.faucet_amount.0 > 0
+                && !self.exec_deposit.is_zero()
+                && self.challenge_window_ms > 0
+                && self.reward_multiplier > 0
                 && self.min_rows >= 1
                 && self.min_rows <= self.max_rows
                 && self.budget_ppm <= 1_000_000

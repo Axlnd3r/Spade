@@ -84,6 +84,8 @@ pub struct Appraisal {
     pub chat_id: String,
     pub signing_address: String,
     pub signature: String,
+    /// sha256 of the NEAR AI response body the signature covers (D-13).
+    pub response_hash: String,
     pub created_ms: u64,
     pub priced_ms: Option<u64>,
     /// Challenges that count toward `max_challenges`: pending or resolved, not failed.
@@ -118,6 +120,8 @@ pub struct Challenge {
     pub chat_id: String,
     pub signing_address: String,
     pub signature: String,
+    /// sha256 of the NEAR AI response body the signature covers (D-13).
+    pub response_hash: String,
     pub created_ms: u64,
     pub resolved_ms: Option<u64>,
 }
