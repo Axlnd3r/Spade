@@ -29,7 +29,7 @@ export function Header({ onMenu }: { onMenu(): void }) {
           </button>
         ) : (
           <button type="button" className="header__account" onClick={signIn}>
-            CONNECT WALLET
+            CONNECT<span className="hide-sm"> WALLET</span>
           </button>
         )}
         <button type="button" className="header__burger" aria-label="Open menu" onClick={onMenu}>

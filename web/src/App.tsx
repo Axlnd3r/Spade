@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import Ledger from "./pages/Ledger";
 import Taksir from "./pages/Taksir";
 import Verify from "./pages/Verify";
+import { SceneCanvas } from "./scene/SceneCanvas";
 import { Footer } from "./ui/Footer";
 import { Header } from "./ui/Header";
 import { Menu } from "./ui/Menu";
@@ -36,7 +37,9 @@ export default function App() {
   return (
     <WalletProvider>
       <HashRouter>
-        <Shell />
+        <SceneCanvas>
+          <Shell />
+        </SceneCanvas>
       </HashRouter>
     </WalletProvider>
   );
