@@ -62,7 +62,10 @@ function renderAt(path: string) {
   );
 }
 
-afterEach(() => vi.mocked(view).mockReset());
+// Reset before each test: an afterEach reset can run before the previous render unmounts.
+beforeEach(() => {
+  vi.mocked(view).mockReset();
+});
 
 test("case_not_found", async () => {
   mockChain(null);

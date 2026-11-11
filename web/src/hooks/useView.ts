@@ -28,7 +28,8 @@ export function useView<T>(method: string, args: object | null = {}, refreshMs?:
     }
     let live = true;
     const load = () =>
-      view<T>(method, JSON.parse(key))
+      Promise.resolve()
+        .then(() => view<T>(method, JSON.parse(key)))
         .then((data) => live && setState({ data, error: undefined, loading: false }))
         .catch((error: Error) => live && setState((s) => ({ ...s, error, loading: false })));
     load();

@@ -33,7 +33,10 @@ function renderHome() {
   );
 }
 
-afterEach(() => vi.mocked(view).mockReset());
+// Reset before each test: an afterEach reset can run before the previous render unmounts.
+beforeEach(() => {
+  vi.mocked(view).mockReset();
+});
 
 test("home_renders_live_stats", async () => {
   vi.mocked(view).mockImplementation(async (method: string) => {
