@@ -49,4 +49,5 @@
   - dua eksekusi testnet berhasil, termasuk satu `request_execution` dengan argumen persis seperti kontrak (lihat `docs/TESTNET.md`, D-13, dan D-14).
 
   Akun testnet manusia: `spade-taksir.testnet` (10 NEAR dari faucet).
-- **CHECKPOINT 3:** menunggu keputusan manusia.
+- **CHECKPOINT 3:** manusia memutuskan lanjut ke S4 dengan hash `0206187e…`; lima Minor S3 tetap ditunda.
+- Plan Section 4 ditulis: `docs/superpowers/plans/2026-11-11-section-4-integration.md`.
