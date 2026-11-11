@@ -518,3 +518,86 @@ p {
   letter-spacing: 0.04em;
   line-height: 1;
 }
+
+/* ---- case ---- */
+.lines {
+  margin: 0;
+  padding: 18px 18px 18px 44px;
+  border: var(--hairline);
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+  line-height: 1.9;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+.lines li::marker {
+  color: var(--ash);
+  font-size: 11px;
+}
+.challenge-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: var(--hairline);
+}
+.challenge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  padding: 14px 0;
+  border-bottom: var(--hairline);
+  font-size: 14px;
+}
+.proof {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(160px, 260px) minmax(0, 1fr);
+  gap: 10px 24px;
+  font-size: 13px;
+}
+.proof dt {
+  color: var(--ash);
+  letter-spacing: 0.08em;
+}
+.proof dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  letter-spacing: 0.04em;
+}
+.bust {
+  border: 1px solid var(--white);
+  background: rgba(0, 0, 0, 0.75);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 620px;
+}
+.bust__title {
+  font-weight: 700;
+  font-size: clamp(40px, 7vw, 64px);
+  letter-spacing: 0.067em;
+  line-height: 1;
+}
+.bust__prices {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  font-size: 22px;
+}
+.bust__price {
+  font-weight: 700;
+  font-size: clamp(32px, 5vw, 48px);
+  letter-spacing: 0.04em;
+}
+.bust__reward {
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+}
+@media (max-width: 640px) {
+  .proof {
+    grid-template-columns: 1fr;
+  }
+}
