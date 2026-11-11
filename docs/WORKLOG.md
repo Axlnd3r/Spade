@@ -25,3 +25,11 @@
   4. **CHECKPOINT 1:** laporkan ke manusia dan tunggu keputusannya.
 - **Opsional paralel (D-5):** S2 kontrak boleh dimulai. Plan S2 belum ditulis.
 - **Minor tertunda:** ada empat. Yang paling penting untuk S2: batas tepat 25% (`>` ketat) pada aturan M-11 harus dipatok di test kontrak.
+
+## 2026-11-11
+
+- Kunci API NEAR AI diisi oleh manusia. Awalnya setiap panggilan ditolak dengan HTTP 402 `no_limit_configured` karena akun belum punya kredit. Runner sekarang menganggap 402 fatal (`597d9bd`).
+- S1-T7: model dipilih, yaitu `Qwen/Qwen3-VL-30B-A3B-Instruct` (D-9). Eksperimen 160 panggilan selesai dalam 29 detik, tanpa kegagalan.
+  - Pada ambang 25%, data biasa tertangkap 40% dan data jahil 46,7%.
+  - Usulan `threshold_bps` 7500 (data biasa 10%). Rinciannya di `docs/EXPERIMENT.md`.
+- **CHECKPOINT 1:** menunggu keputusan manusia.

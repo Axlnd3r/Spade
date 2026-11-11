@@ -84,3 +84,13 @@ Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blue
   - Lama penyimpanan signature tidak didokumentasikan.
 - **Dampak ke enclave (S3):** output maksimal 900 byte, tapi `r` sepanjang 140 karakter bisa mencapai 560 byte UTF-8, sementara `g` (130 hex) + `a` (42) + `h` (64) + `c` + `m` juga ikut makan tempat. **Keputusan:** `r` dipotong per karakter (maksimal 140) **dan** output total dicek ≤ 900 byte. Kalau masih melebihi, `r` dipendekkan lagi.
 - **Dampak ke spike:** `consistency.mjs` mengirim header `x-no-aliasing: true`, sama seperti enclave nanti.
+
+## D-9 Model penaksir (S1-T7, 2026-11-11)
+
+- **Keputusan:** `Qwen/Qwen3-VL-30B-A3B-Instruct`, milik `nearai`, berstatus Confidential TEE. Harganya $0,15 per 1 juta token input dan $0,55 per 1 juta token output.
+- **Bukti TEE:** `GET /v1/attestation/report?model=…` mengembalikan HTTP 200 dengan `model_attestations` berisi Intel TDX quote, `nvidia_payload`, dan signing address model `0x2665cce942fa427ef30d87f4b0bff67fb7645462` (dicek 2026-11-11).
+- **Alasan:**
+  - Ini satu-satunya model TEE `nearai` yang menjawab JSON dalam `max_tokens` 120.
+  - `z-ai/glm-5.3-flash`, `Qwen/Qwen3.6-35B-A3B-FP8`, dan `Qwen/Qwen3.8-27B` menghabiskan seluruh token untuk reasoning, sehingga content-nya kosong.
+  - Latency rata-rata 716 ms, maksimal 1381 ms, jauh di bawah batas 30 detik.
+- **Catatan:** di endpoint ini, `temperature: 0` tidak deterministik. Sekitar 20% pengulangan dengan urutan yang sama menghasilkan harga berbeda. Lihat `docs/EXPERIMENT.md`.
