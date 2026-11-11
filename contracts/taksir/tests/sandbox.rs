@@ -123,6 +123,30 @@ impl Env {
         (r.into_result().is_ok(), text)
     }
 
+    /// Calls the contract with exactly `tgas`; asserts success and returns the
+    /// largest `gas_burnt` (in TGas) of any receipt the contract executed.
+    async fn ok_with_gas(&self, who: &AccountId, method: &str, args: Value, deposit: NearToken, tgas: u64) -> f64 {
+        let r = near_api::Contract(self.taksir.clone())
+            .call_function(method, args)
+            .transaction()
+            .deposit(deposit)
+            .gas(NearGas::from_tgas(tgas))
+            .with_signer(who.clone(), self.signer.clone())
+            .send_to(&self.net)
+            .await
+            .unwrap();
+        let text = format!("{r:?}");
+        let full = r.into_full().expect("final result");
+        let heaviest = full
+            .receipt_outcomes()
+            .iter()
+            .filter(|o| o.executor_id == self.taksir)
+            .map(|o| o.gas_burnt.as_gas() as f64 / 1e12)
+            .fold(0.0, f64::max);
+        assert!(full.into_result().is_ok(), "{method} with {tgas} TGas should succeed: {text}");
+        heaviest
+    }
+
     async fn ok(&self, who: &AccountId, method: &str, args: Value, deposit: NearToken) {
         let (ok, text) = self.call(who, &self.taksir, method, args, deposit).await;
         assert!(ok, "{method} should succeed: {text}");
@@ -456,3 +480,30 @@ async fn s13_streak_clean_caught_quiet() {
     assert_eq!((as_u64(&s["clean_streak"]), as_u64(&s["best_streak"])), (1, 1), "{s}");
 }
 
+
+/// Gas budget (REQUEST 100 / CALLBACK 40 / MIN_PREPAID 170 TGas) in the worst case:
+/// 100 rows / ~2000 bytes, the heaviest reply, and an epoch backlog that makes
+/// every call and callback close the full 1000 epochs.
+#[tokio::test]
+async fn s14_worst_case_fits_the_gas_budget() {
+    let e = Env::start(json!({ "epoch_ms": 1, "challenge_window_ms": 86_400_000 })).await;
+    let text: String = (0..100).map(|i| format!("worst case row {i:04}")).collect::<Vec<_>>().join("\n");
+    assert!(text.len() <= 2000 && text.len() > 1900, "{} bytes", text.len());
+
+    e.sandbox.fast_forward(100).await.unwrap();
+    e.push(json!({ "Padded": 100 })).await;
+    let appraise = e.ok_with_gas(&e.alice, "appraise", json!({ "data": text }), op_deposit(), 170).await;
+    assert_eq!(e.view(&e.taksir, "get_appraisal", json!({ "id": 0 })).await["status"], "Priced");
+
+    e.sandbox.fast_forward(100).await.unwrap();
+    e.push(json!({ "Padded": 9000 })).await;
+    let args = json!({ "appraisal_id": 0, "variant": rotated(&text, 1) });
+    let challenge = e.ok_with_gas(&e.bob, "challenge", args, op_deposit(), 170).await;
+    let chs = e.view(&e.taksir, "get_challenges", json!({ "appraisal_id": 0 })).await;
+    assert_eq!(chs[0]["status"], "Caught");
+    let s = e.stats().await;
+    assert!(as_u64(&s["epoch_by_time"]) > as_u64(&s["epoch_index"]), "backlog kept every call at 1000 epochs: {s}");
+
+    println!("GAS: heaviest receipt appraise {appraise:.1} TGas, challenge {challenge:.1} TGas");
+    assert!(appraise < 30.0 && challenge < 30.0, "a callback must stay well inside its 40 TGas");
+}

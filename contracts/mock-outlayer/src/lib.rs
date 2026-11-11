@@ -9,6 +9,9 @@ use near_sdk::{env, near, AccountId, PromiseOrValue};
 pub enum MockItem {
     /// A well-formed enclave reply with this price, hashed over the data received.
     Price(u32),
+    /// Like `Price`, with every field near its realistic maximum (140-char 3-byte
+    /// reason, full model id, chat id, address and signature): the heaviest reply.
+    Padded(u32),
     /// This exact stdout.
     Raw(String),
     /// The execution fails (also what an empty queue does).
@@ -51,15 +54,24 @@ impl Mock {
             .to_string(),
         );
         let item = if self.queue.is_empty() { MockItem::Fail } else { self.queue.remove(0) };
+        let input: Value = serde_json::from_str(&input_data).unwrap_or_default();
+        let data = input["data"].as_str().unwrap_or_default();
+        let h: String = env::sha256(data.as_bytes()).iter().map(|b| format!("{b:02x}")).collect();
         match item {
-            MockItem::Price(p) => {
-                let input: Value = serde_json::from_str(&input_data).unwrap_or_default();
-                let data = input["data"].as_str().unwrap_or_default();
-                let h: String = env::sha256(data.as_bytes()).iter().map(|b| format!("{b:02x}")).collect();
-                PromiseOrValue::Value(
-                    json!({"v": 1, "h": h, "p": p, "r": "mock", "m": "mock", "c": "", "a": "", "g": ""}).to_string(),
-                )
-            }
+            MockItem::Price(p) => PromiseOrValue::Value(
+                json!({"v": 1, "h": h, "p": p, "r": "mock", "m": "mock", "c": "", "a": "", "g": ""}).to_string(),
+            ),
+            MockItem::Padded(p) => PromiseOrValue::Value(
+                json!({
+                    "v": 1, "h": h, "p": p,
+                    "r": "あ".repeat(140),
+                    "m": "Qwen/Qwen3-VL-30B-A3B-Instruct",
+                    "c": format!("chatcmpl-{}", "f".repeat(32)),
+                    "a": format!("0x{}", "a".repeat(40)),
+                    "g": "b".repeat(130),
+                })
+                .to_string(),
+            ),
             MockItem::Raw(s) => PromiseOrValue::Value(s),
             // A failing promise (not a panic) so the queue pop above is kept.
             MockItem::Fail => PromiseOrValue::Promise(Self::ext(env::current_account_id()).fail()),
@@ -102,6 +114,16 @@ mod tests {
         let want: String = env::sha256("a\nb".as_bytes()).iter().map(|b| format!("{b:02x}")).collect();
         assert_eq!((out["v"].as_u64(), out["p"].as_u64(), out["h"].as_str()), (Some(1), Some(300), Some(want.as_str())));
         assert_eq!(m.last_request().unwrap()["input_data"], json!({ "data": "a\nb" }).to_string());
+    }
+
+    #[test]
+    fn padded_reply_is_heavy_and_valid() {
+        let mut m = Mock::default();
+        m.push(MockItem::Padded(42));
+        let s = call(&mut m, "a\nb").unwrap();
+        assert!(s.len() > 700 && s.len() <= 900, "{} bytes", s.len());
+        let out: Value = serde_json::from_str(&s).unwrap();
+        assert_eq!((out["p"].as_u64(), out["r"].as_str().unwrap().chars().count()), (Some(42), 140));
     }
 
     #[test]
