@@ -135,8 +135,9 @@ export default function Verify() {
           4 · EVERY ANSWER IS SIGNED BY NEAR AI CLOUD
         </h2>
         <p className="muted">
-          The model runs in a TEE and signs MODEL:sha256(request):sha256(response). The enclave checks that signature and
-          the contract stores it with each case. Latest case:
+          The model runs in a TEE and signs MODEL:sha256(request):sha256(response). The enclave keeps a signature only if
+          that text matches this exact request and reply, and the contract stores it with each case, so anyone can recover
+          the signer from it. Latest case:
         </p>
         {stats.data ? <LatestProof count={stats.data.appraisal_count} /> : null}
       </section>

@@ -35,3 +35,13 @@ test("verify_flags_a_different_code_hash", async () => {
   expect(await screen.findByText("DOES NOT MATCH")).toBeInTheDocument();
   expect(await screen.findByText("0 access keys. Nobody can change this contract.")).toBeInTheDocument();
 });
+
+test("verify_does_not_claim_the_enclave_verifies_the_signature", async () => {
+  setup(CONTRACT_CODE_HASH, 1);
+  await screen.findAllByText("MATCHES docs/TESTNET.md");
+  // The enclave only keeps a signature whose signed text matches this request and reply (D-13);
+  // checking the signature itself (EIP-191 recover) is left to whoever verifies.
+  expect(screen.queryByText(/The enclave checks that signature/)).toBeNull();
+  expect(screen.getByText(/keeps a signature only if that text matches this exact request and reply/)).toBeInTheDocument();
+  expect(screen.getByText(/recover the signer/)).toBeInTheDocument();
+});
