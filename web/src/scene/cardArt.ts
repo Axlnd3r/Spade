@@ -1,24 +1,44 @@
-// Mr. X card art. Front: Mr. X holding the padlock, a black-and-white engraving
-// (texture of MrX_gembok.glb). Back: original vector spade (Card.dc.html), rendered
-// to a canvas texture, so its text uses system fonts: an SVG drawn as an image
-// cannot load web fonts.
-import frontUrl from "./mrx-gembok.png";
+// Mr. X card art. Fronts: four black-and-white engravings of Mr. X (padlock, sceptre,
+// pistol, key; textures of the MrX_*.glb models). Back: original vector spade
+// (Card.dc.html), rendered to a canvas texture, so its text uses system fonts: an SVG
+// drawn as an image cannot load web fonts.
+import gembokUrl from "./mrx-gembok.png";
+import kunciUrl from "./mrx-kunci.png";
+import pistolUrl from "./mrx-pistol.png";
+import tongkatUrl from "./mrx-tongkat.png";
 
-export const CARD_W = 1024;
-export const CARD_H = 1434;
+export const CARD_W = 768;
+export const CARD_H = 1075;
 
-export const FRONT_URL: string = frontUrl;
+/** The card's form, one per page: what Mr. X holds, or the spade on both sides. */
+export type CardForm = "gembok" | "tongkat" | "pistol" | "sekop" | "kunci";
 
-export const INK = [20, 20, 20] as const;
-export const PAPER = [242, 240, 233] as const;
+/** Front art (null = the spade, as on the back) and the colour of the light for each form. */
+export const FORMS: Record<CardForm, { art: string | null; color: string }> = {
+  gembok: { art: gembokUrl, color: "#6a5cff" },
+  tongkat: { art: tongkatUrl, color: "#3fb6ff" },
+  pistol: { art: pistolUrl, color: "#d24cff" },
+  sekop: { art: null, color: "#ffb020" },
+  kunci: { art: kunciUrl, color: "#7dffb5" },
+};
 
-/** Snaps the grey edges of upscaled line art back to ink or paper, so the small source stays crisp. */
-export function inkLevels(px: Uint8ClampedArray): void {
+export function formForPath(pathname: string): CardForm {
+  if (pathname === "/taksir") return "tongkat";
+  if (pathname === "/cases" || pathname.startsWith("/case/")) return "pistol";
+  if (pathname === "/ledger") return "sekop";
+  if (pathname === "/verify") return "kunci";
+  return "gembok";
+}
+
+/** Turns line art into light engraved in glass: the ink becomes white with its strength as alpha,
+ * the paper becomes clear. `lightInk` is for art drawn light on dark (the spade back). */
+export function engrave(px: Uint8ClampedArray, lightInk: boolean): void {
   for (let i = 0; i < px.length; i += 4) {
     const l = (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) / 255;
-    const x = Math.min(1, Math.max(0, (l - 0.35) / 0.35));
-    const t = x * x * (3 - 2 * x);
-    for (let c = 0; c < 3; c++) px[i + c] = INK[c] + (PAPER[c] - INK[c]) * t;
+    const x = Math.min(1, Math.max(0, lightInk ? (l - 0.2) / 0.45 : (0.7 - l) / 0.35));
+    const ink = x * x * (3 - 2 * x);
+    px[i] = px[i + 1] = px[i + 2] = 255;
+    px[i + 3] = Math.round(ink * px[i + 3]);
   }
 }
 
@@ -26,14 +46,6 @@ const SPADE = "M0,-14 C5,-8 14,-3 14,4 C14,10 8,13 3,9 C3,12 4,15 7,17 L-7,17 C-
 const FONT = "'Arial Black', Arial, Helvetica, sans-serif";
 
 const open = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 350" width="${CARD_W}" height="${CARD_H}">`;
-
-const index = (rotate: boolean) => `
-<g ${rotate ? 'transform="rotate(180 125 175)"' : ""} font-family="${FONT}" font-weight="900" font-size="17" fill="#1A1A1A" text-anchor="middle">
-<text x="24" y="38">M</text>
-<text x="24" y="60">R</text>
-<circle cx="24" cy="69" r="2.2"/>
-<text x="24" y="92" fill="#C8102E">X</text>
-</g>`;
 
 export const BACK_SVG = `${open}
 <defs>

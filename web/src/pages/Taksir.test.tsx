@@ -37,7 +37,7 @@ function renderTaksir(wallet?: Partial<WalletApi>, trigger = vi.fn()) {
   const { unmount } = render(
     <MemoryRouter>
       <WalletContext.Provider value={api}>
-        <StageContext.Provider value={{ setPage: vi.fn(), trigger }}>
+        <StageContext.Provider value={{ setPage: vi.fn(), trigger, setMenu: vi.fn(), preview: vi.fn() }}>
           <Taksir />
         </StageContext.Provider>
       </WalletContext.Provider>

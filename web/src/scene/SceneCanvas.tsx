@@ -1,15 +1,19 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import { FRONT_URL } from "./cardArt";
+import { BACK_SVG, formForPath, FORMS, svgDataUrl, type CardForm } from "./cardArt";
 import type { Stage, StageEvent, StagePage } from "./Stage";
 import { hasWebGL } from "./webgl";
 
 export interface StageApi {
   setPage(page: StagePage): void;
   trigger(event: StageEvent): void;
+  /** The menu is open: the card comes forward as on Home. */
+  setMenu(open: boolean): void;
+  /** Show another page's card form (the menu item under the pointer); null returns to this page's. */
+  preview(form: CardForm | null): void;
 }
 
-export const StageContext = createContext<StageApi>({ setPage() {}, trigger() {} });
+export const StageContext = createContext<StageApi>({ setPage() {}, trigger() {}, setMenu() {}, preview() {} });
 
 /** Commands for the 3D stage; harmless no-ops when WebGL is unavailable. */
 export function useStage(): StageApi {
@@ -19,11 +23,17 @@ export function useStage(): StageApi {
 /** The fixed 3D background (or a static card image without WebGL) behind the pages. */
 export function SceneCanvas({ children }: { children: ReactNode }) {
   const [webgl] = useState(hasWebGL);
+  const [menu, setMenu] = useState(false);
+  const [preview, setPreview] = useState<CardForm | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const stage = useRef<Stage | null>(null);
   const firstRoute = useRef(true);
   const { pathname } = useLocation();
-  const page: StagePage = pathname === "/" ? "home" : "inner";
+  const page: StagePage = menu || pathname === "/" ? "home" : "inner";
+  const form = preview ?? formForPath(pathname);
+  // What the stage starts with: three.js may finish loading after the page or form has changed.
+  const latest = useRef({ page, form });
+  latest.current = { page, form };
 
   useEffect(() => {
     if (!webgl || !canvas.current) return;
@@ -32,7 +42,8 @@ export function SceneCanvas({ children }: { children: ReactNode }) {
     import("./Stage").then(({ Stage }) => {
       if (!live || !canvas.current) return;
       const s = new Stage();
-      s.setPage(page);
+      s.setPage(latest.current.page);
+      s.setForm(latest.current.form);
       s.mount(canvas.current);
       stage.current = s;
       if (import.meta.env.DEV) (window as unknown as { __stage: Stage }).__stage = s;
@@ -42,20 +53,27 @@ export function SceneCanvas({ children }: { children: ReactNode }) {
       stage.current?.dispose();
       stage.current = null;
     };
-    // The stage is created once; page changes go through the effect below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [webgl]);
 
   useEffect(() => {
     stage.current?.setPage(page);
+  }, [page]);
+
+  useEffect(() => {
+    stage.current?.setForm(form);
+  }, [form]);
+
+  useEffect(() => {
     if (firstRoute.current) firstRoute.current = false;
     else stage.current?.warp();
-  }, [pathname, page]);
+  }, [pathname]);
 
   const api = useMemo<StageApi>(
     () => ({
       setPage: (p) => stage.current?.setPage(p),
       trigger: (e) => stage.current?.trigger(e),
+      setMenu,
+      preview: setPreview,
     }),
     [],
   );
@@ -65,7 +83,11 @@ export function SceneCanvas({ children }: { children: ReactNode }) {
       {webgl ? (
         <canvas ref={canvas} className={`stage stage--${page}`} aria-hidden="true" />
       ) : (
-        <img className={`stage-fallback stage-fallback--${page}`} src={FRONT_URL} alt="Mr. X card" />
+        <img
+          className={`stage-fallback stage-fallback--${page}`}
+          src={FORMS[form].art ?? svgDataUrl(BACK_SVG)}
+          alt="Mr. X card"
+        />
       )}
       {children}
     </StageContext.Provider>

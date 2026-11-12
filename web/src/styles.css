@@ -150,13 +150,26 @@ a:hover {
   justify-content: center;
   gap: 40px;
   padding: 120px clamp(24px, 8vw, 120px) 60px;
-  background: rgba(0, 0, 0, 0.92);
   overflow-y: auto;
+}
+/* Menu open: the pages step back, so only the list and the card remain. */
+.page,
+.footer {
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s;
+}
+.menu-open .page,
+.menu-open .footer {
+  opacity: 0;
+  visibility: hidden;
 }
 .menu__list {
   list-style: none;
   margin: 0;
   padding: 0;
+  /* As wide as its labels: the card beside it stays free to grab. */
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -170,6 +183,9 @@ a:hover {
   text-decoration: none;
   color: var(--ash);
   opacity: 0.45;
+  transition:
+    opacity 0.25s ease,
+    color 0.25s ease;
 }
 .menu__item:hover,
 .menu__item:focus-visible {
@@ -188,6 +204,18 @@ a:hover {
 }
 .menu__close {
   align-self: flex-start;
+}
+/* Portrait: the card floats in the top third (Stage layout), so the list starts below it. */
+@media (max-aspect-ratio: 1/1) {
+  .menu {
+    justify-content: flex-start;
+    gap: 24px;
+    padding-top: 38vh;
+    padding-bottom: 32px;
+  }
+  .menu__list {
+    gap: 12px;
+  }
 }
 
 /* ---- page ---- */

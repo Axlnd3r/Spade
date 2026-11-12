@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { StageContext } from "../scene/SceneCanvas";
 import { MENU_ITEMS, Menu } from "./Menu";
 
 test("menu_lists_five_items_and_marks_active", () => {
@@ -26,4 +27,24 @@ test("menu_renders_nothing_when_closed", () => {
     </MemoryRouter>,
   );
   expect(screen.queryAllByRole("link")).toHaveLength(0);
+});
+
+test("menu_shows_each_items_card_form_on_the_stage", () => {
+  const stage = { setPage: vi.fn(), trigger: vi.fn(), setMenu: vi.fn(), preview: vi.fn() };
+  const { unmount } = render(
+    <MemoryRouter>
+      <StageContext.Provider value={stage}>
+        <Menu open onClose={() => {}} />
+      </StageContext.Provider>
+    </MemoryRouter>,
+  );
+  expect(stage.setMenu).toHaveBeenLastCalledWith(true);
+  fireEvent.mouseEnter(screen.getByRole("link", { name: /CASES/ }));
+  expect(stage.preview).toHaveBeenLastCalledWith("pistol");
+  fireEvent.focus(screen.getByRole("link", { name: /LEDGER/ }));
+  expect(stage.preview).toHaveBeenLastCalledWith("sekop");
+  fireEvent.mouseLeave(screen.getByRole("list"));
+  expect(stage.preview).toHaveBeenLastCalledWith(null);
+  unmount();
+  expect(stage.setMenu).toHaveBeenLastCalledWith(false);
 });

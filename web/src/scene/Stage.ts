@@ -4,6 +4,7 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { makeCard, type Card } from "./card";
+import { FORMS, type CardForm } from "./cardArt";
 import { makeEmbers, type Embers } from "./embers";
 import { makeFloor, type Floor } from "./floor";
 import { makeWarp, type Warp } from "./warp";
@@ -15,9 +16,19 @@ export type StageEvent = "thinking" | "idle" | "held" | "busted" | "burn";
 const SPIN_PERIOD_S = 20;
 const BOB_AMPLITUDE = 0.08;
 const BOB_PERIOD_S = 4;
-const IDLE = new THREE.Color("#6a5cff");
 const HELD = new THREE.Color("#5cc8ff");
 const BUSTED = new THREE.Color("#ff6a1a");
+/** Dragging: radians per pixel, and the fastest the card may be thrown (rad/s). */
+const DRAG = 0.01;
+const MAX_VEL = 25;
+/** Extra speed dies out at rate 3/s, so this much adds exactly half a turn: a flip. */
+const FLIP_VEL = 3 * Math.PI;
+/** A press that moves less than this many pixels is a click, not a drag. */
+const TAP_PX = 6;
+/** Things under the pointer that keep their own click; the card is not grabbed through them. */
+const CONTROLS = "a, button, input, textarea, select, label";
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /** Where the card sits for a page, for wide and narrow screens. */
 function layout(page: StagePage, aspect: number) {
@@ -40,8 +51,8 @@ function radialTexture(): THREE.CanvasTexture {
   return new THREE.CanvasTexture(c);
 }
 
-/** One persistent three.js scene: Mr. X's card over a wet floor. React talks to it through
- * setPage/trigger/warp; everything else (loop, resize, visibility) is internal. */
+/** One persistent three.js scene: Mr. X's glass card over a wet floor. React talks to it through
+ * setPage/setForm/trigger/warp; everything else (loop, resize, visibility, dragging) is internal. */
 export class Stage {
   private renderer!: THREE.WebGLRenderer;
   private composer!: EffectComposer;
@@ -57,11 +68,26 @@ export class Stage {
   private raf = 0;
   private reduced = prefersReducedMotion();
   private page: StagePage = "home";
+  private form: CardForm = "gembok";
+  /** A form waiting for the card to turn edge-on, and how long it has waited. */
+  private pendingForm: CardForm | null = null;
+  private pendingAge = 0;
+  private facing = true;
   private angle = 0.35;
+  /** Turning speed (rad/s): the base spin plus whatever a drag, a click or a form change added. */
+  private vel = 0;
+  private tilt = 0;
+  /** 1 = the card leans toward the pointer; fades to 0 while it is held. */
+  private lean = 1;
+  /** A press that started on the card. `turn` is false for touch, where only a tap counts. */
+  private drag: { x: number; y: number; moved: number; at: number; turn: boolean } | null = null;
+  private raycaster = new THREE.Raycaster();
   private spin = 1;
   private spinTarget = 1;
-  private color = IDLE.clone();
-  private colorTarget = IDLE.clone();
+  /** The light of the current form; events (held, busted) colour it for a while. */
+  private idle = new THREE.Color(FORMS.gembok.color);
+  private color = this.idle.clone();
+  private colorTarget = this.idle.clone();
   private flash = 0;
   private burnTimer = -1;
   private pointer = new THREE.Vector2();
@@ -105,6 +131,7 @@ export class Stage {
     this.halo.renderOrder = -1;
 
     this.card = makeCard();
+    this.card.setForm(this.form);
     this.floor = makeFloor(w, h);
     this.embers = makeEmbers();
     this.warpFx = makeWarp();
@@ -117,16 +144,80 @@ export class Stage {
     this.composer.addPass(new OutputPass());
 
     const onResize = () => this.resize();
-    const onPointer = (e: PointerEvent) =>
-      this.pointer.set((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
     const onVisibility = () => (document.hidden ? this.stop() : this.start());
+
+    // The canvas sits behind the pages, so the card is picked from window events: a press that
+    // lands on it, and not on a link or a field above it, grabs it.
+    const root = document.documentElement;
+    const ndc = new THREE.Vector2();
+    const onCard = (e: PointerEvent) => {
+      if (e.target instanceof Element && e.target.closest(CONTROLS)) return false;
+      ndc.set((e.clientX / window.innerWidth) * 2 - 1, 1 - (e.clientY / window.innerHeight) * 2);
+      this.raycaster.setFromCamera(ndc, this.camera);
+      return this.raycaster.intersectObject(this.card.body).length > 0;
+    };
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0 || !onCard(e)) return;
+      // Touch keeps scrolling the page; there a tap flips the card and nothing more.
+      const turn = e.pointerType !== "touch";
+      this.drag = { x: e.clientX, y: e.clientY, moved: 0, at: performance.now(), turn };
+      if (turn) {
+        e.preventDefault();
+        root.style.cursor = "grabbing";
+      }
+    };
+    const onMove = (e: PointerEvent) => {
+      this.pointer.set((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
+      const d = this.drag;
+      if (!d) {
+        if (e.pointerType !== "touch") root.style.cursor = onCard(e) ? "grab" : "";
+        return;
+      }
+      const dx = e.clientX - d.x;
+      const dy = e.clientY - d.y;
+      d.x = e.clientX;
+      d.y = e.clientY;
+      d.moved += Math.abs(dx) + Math.abs(dy);
+      if (!d.turn) return;
+      const now = performance.now();
+      this.angle += dx * DRAG;
+      this.tilt = clamp(this.tilt + dy * DRAG, -1, 1);
+      this.vel = clamp((dx * DRAG) / Math.max((now - d.at) / 1000, 0.008), -MAX_VEL, MAX_VEL);
+      d.at = now;
+    };
+    const onUp = () => {
+      const d = this.drag;
+      if (!d) return;
+      this.drag = null;
+      root.style.cursor = "";
+      if (d.moved < TAP_PX) this.flip();
+      // Held still before letting go: no throw.
+      else if (performance.now() - d.at > 80) this.vel = 0;
+    };
+    const onCancel = () => {
+      this.drag = null;
+      root.style.cursor = "";
+    };
+    const onSelect = (e: Event) => {
+      if (this.drag?.turn) e.preventDefault();
+    };
+
     window.addEventListener("resize", onResize);
-    window.addEventListener("pointermove", onPointer);
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
+    document.addEventListener("selectstart", onSelect);
     document.addEventListener("visibilitychange", onVisibility);
     this.disposers.push(
       () => window.removeEventListener("resize", onResize),
-      () => window.removeEventListener("pointermove", onPointer),
+      () => window.removeEventListener("pointerdown", onDown),
+      () => window.removeEventListener("pointermove", onMove),
+      () => window.removeEventListener("pointerup", onUp),
+      () => window.removeEventListener("pointercancel", onCancel),
+      () => document.removeEventListener("selectstart", onSelect),
       () => document.removeEventListener("visibilitychange", onVisibility),
+      onCancel,
     );
 
     this.resize();
@@ -136,6 +227,30 @@ export class Stage {
 
   setPage(page: StagePage) {
     this.page = page;
+  }
+
+  /** The card turns over and comes back as another form, in that form's light. */
+  setForm(form: CardForm) {
+    if (form === this.form) return;
+    this.form = form;
+    this.idle.set(FORMS[form].color);
+    if (this.burnTimer < 0) this.colorTarget.copy(this.idle);
+    if (!this.card) {
+      // Not mounted yet: mount() starts in this form.
+      this.color.copy(this.idle);
+    } else if (this.reduced) {
+      this.card.setForm(form);
+    } else {
+      this.pendingForm = form;
+      this.pendingAge = 0;
+      this.vel = clamp(this.vel + FLIP_VEL, -MAX_VEL, MAX_VEL);
+    }
+  }
+
+  private flip() {
+    if (this.reduced) this.angle += Math.PI;
+    else this.vel = clamp(this.vel + FLIP_VEL, -MAX_VEL, MAX_VEL);
+    this.flash = 0.35;
   }
 
   warp() {
@@ -149,7 +264,7 @@ export class Stage {
         break;
       case "idle":
         this.spinTarget = 1;
-        this.colorTarget.copy(IDLE);
+        this.colorTarget.copy(this.idle);
         break;
       case "held":
         this.spinTarget = 1;
@@ -225,15 +340,35 @@ export class Stage {
     this.scale += (l.scale - this.scale) * k;
     this.glow += (l.glow - this.glow) * k;
 
-    // Spin, slowed to a stop for reduced motion.
+    // Spin: a slow base turn (none for reduced motion). A throw, a flip or a form change adds
+    // speed that dies out; while the card is held, the pointer alone turns it.
     this.spin += (this.spinTarget - this.spin) * k;
-    if (!this.reduced) this.angle += dt * ((Math.PI * 2) / SPIN_PERIOD_S) * this.spin;
+    const base = this.reduced ? 0 : ((Math.PI * 2) / SPIN_PERIOD_S) * this.spin;
+    const held = !!this.drag?.turn;
+    if (!held) {
+      this.vel += (base - this.vel) * k;
+      this.angle += this.vel * dt;
+      this.tilt -= this.tilt * k;
+    }
+    this.lean += ((held ? 0 : 1) - this.lean) * k;
     const bob = this.reduced ? 0 : Math.sin((t / BOB_PERIOD_S) * Math.PI * 2) * BOB_AMPLITUDE;
+    const turn = this.angle + this.pointer.x * 0.18 * this.lean;
 
     const g = this.card.group;
     g.position.set(this.pos.x, this.pos.y + bob, 0);
     g.scale.setScalar(this.scale);
-    g.rotation.set(this.pointer.y * 0.12, this.angle + this.pointer.x * 0.18, 0);
+    g.rotation.set(this.tilt + this.pointer.y * 0.12 * this.lean, turn, 0);
+
+    // A new form arrives while the card is edge-on, so the art never changes in view.
+    const facing = Math.cos(turn) > 0;
+    if (this.pendingForm) {
+      this.pendingAge += dt;
+      if (facing !== this.facing || this.pendingAge > 1.2) {
+        this.card.setForm(this.pendingForm);
+        this.pendingForm = null;
+      }
+    }
+    this.facing = facing;
 
     // Burn: 1.6 s away, 0.6 s held, 0.9 s back, then idle colours.
     if (this.burnTimer >= 0) {
@@ -243,7 +378,7 @@ export class Stage {
       if (b > 3.1) {
         this.burnTimer = -1;
         this.card.burn.value = 0;
-        this.colorTarget.copy(IDLE);
+        this.colorTarget.copy(this.idle);
       }
     }
 
@@ -255,7 +390,8 @@ export class Stage {
     mat.color.copy(this.color).multiplyScalar(this.glow * pulse * (1 + this.flash * 1.5));
     this.halo.position.set(this.pos.x, this.pos.y + bob, -0.8);
     this.halo.scale.setScalar(this.scale);
-    this.card.setGlow(0.16 * this.glow);
+    this.card.setGlow(this.glow);
+    this.card.setColor(this.color);
 
     this.embers.update(dt);
     this.warpFx.update(dt);
