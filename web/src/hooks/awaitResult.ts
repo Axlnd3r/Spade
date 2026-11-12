@@ -10,15 +10,25 @@ export interface AwaitOptions {
   signal: AbortSignal;
 }
 
+const aborted = () => new DOMException("aborted", "AbortError");
+
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener("abort", () => {
+    // The abort may have fired while a read was in flight, before this listener existed.
+    if (signal.aborted) return reject(aborted());
+    const onAbort = () => {
       clearTimeout(t);
-      reject(new DOMException("aborted", "AbortError"));
-    });
+      reject(aborted());
+    };
+    const t = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener("abort", onAbort, { once: true });
   });
 }
+
+export const isAbort = (e: unknown) => e instanceof DOMException && e.name === "AbortError";
 
 /** Polls `read` until `done`, or until `signal` aborts. A failed read is retried. */
 export async function awaitResult<T>(

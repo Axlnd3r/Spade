@@ -1,10 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FAUCET_DEPOSIT, POLL_MS, SOFT_TIMEOUT_MS } from "../chain/config";
 import { normalizeLines, validateData } from "../chain/data";
 import { contractErrorMessage, near, taksir } from "../chain/format";
 import { view } from "../chain/rpc";
 import type { Appraisal, Params, Stats } from "../chain/types";
-import { awaitResult, findNewAppraisal } from "../hooks/awaitResult";
+import { awaitResult, findNewAppraisal, isAbort } from "../hooks/awaitResult";
 import { useView } from "../hooks/useView";
 import { useStage } from "../scene/SceneCanvas";
 import { GhostButton, PageTitle } from "../ui/bits";
@@ -36,6 +36,8 @@ export default function Taksir() {
   const [slow, setSlow] = useState(false);
   const [result, setResult] = useState<Appraisal | null>(null);
   const abort = useRef<AbortController | null>(null);
+  // Leaving the page stops the polling, and the card stops "thinking".
+  useEffect(() => () => abort.current?.abort(), []);
 
   const p = params.data;
   const lines = normalizeLines(text);
@@ -78,7 +80,7 @@ export default function Taksir() {
       else setResult(done);
       balance.reload();
     } catch (e) {
-      setMessage(txErrorMessage(e));
+      if (!isAbort(e)) setMessage(txErrorMessage(e));
     } finally {
       setPhase("idle");
       setSlow(false);

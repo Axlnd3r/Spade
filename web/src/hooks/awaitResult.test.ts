@@ -36,6 +36,18 @@ test("awaitResult_keeps_polling_after_soft_timeout", async () => {
   expect(onSoft).toHaveBeenCalledTimes(1);
 });
 
+test("awaitResult_stops_when_aborted_during_a_read", async () => {
+  const ctrl = new AbortController();
+  let release = () => {};
+  const read = vi.fn(() => new Promise<S>((r) => (release = () => r({ status: "Pending" }))));
+  const settled = awaitResult<S>(read, (v) => v.status !== "Pending", { ...opts(), signal: ctrl.signal }).catch((e) => e);
+  ctrl.abort();
+  release();
+  await vi.advanceTimersByTimeAsync(10000);
+  expect((await settled).name).toBe("AbortError");
+  expect(read).toHaveBeenCalledTimes(1);
+});
+
 test("findNewAppraisal_falls_back_to_owner_and_data", async () => {
   const mine = { id: 8, owner: "me.testnet", data: "a\nb\nc\nd\ne" } as Appraisal;
   const theirs = { id: 7, owner: "other.testnet", data: "x\ny\nz\nv\nw" } as Appraisal;

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { sameLines } from "../chain/data";
 import type { Appraisal, Challenge } from "../chain/types";
+import { WalletContext, type WalletApi } from "../wallet/WalletProvider";
 import Case from "./Case";
 
 vi.mock("../chain/rpc", () => ({ view: vi.fn() }));
@@ -116,6 +117,56 @@ test("sidak_shuffle_changes_order_keeps_lines", async () => {
     .map((li) => li.textContent ?? "");
   expect(preview).not.toEqual(LINES);
   expect(sameLines(preview, LINES)).toBe(true);
+});
+
+test("sidak_bust_shows_one_card", async () => {
+  let sent = false;
+  const caught: Challenge = {
+    id: 5,
+    appraisal_id: 3,
+    challenger: "hunter.testnet",
+    variant: [...LINES].reverse().join("\n"),
+    raw_hash: "",
+    status: "Caught",
+    price: 1,
+    reward: "50000000000000000000",
+    chat_id: "",
+    signing_address: "",
+    signature: "",
+    response_hash: "",
+    created_ms: 0,
+    resolved_ms: 0,
+  };
+  vi.mocked(view).mockImplementation(async (method: string) => {
+    if (method === "get_appraisal")
+      return sent ? appraisal({ status: "Caught", challenge_ids: [5], active_challenges: 1 }) : appraisal({});
+    if (method === "get_challenges") return sent ? [caught] : [];
+    if (method === "get_params") return PARAMS;
+    throw new Error(method);
+  });
+  const wallet: WalletApi = {
+    accountId: "hunter.testnet",
+    signIn: vi.fn(async () => {}),
+    signOut: vi.fn(async () => {}),
+    call: vi.fn(async () => {
+      sent = true;
+      return { txHash: "h" };
+    }),
+  };
+  render(
+    <MemoryRouter initialEntries={["/case/3"]}>
+      <WalletContext.Provider value={wallet}>
+        <Routes>
+          <Route path="/case/:id" element={<Case />} />
+        </Routes>
+      </WalletContext.Provider>
+    </MemoryRouter>,
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "REVERSE" }));
+  fireEvent.click(screen.getByRole("button", { name: /CALL SIDAK/ }));
+  await screen.findByText("SIDAK SO FAR (1)");
+  await screen.findByText("Mr. X was already busted on this case.");
+  expect(screen.getAllByRole("region", { name: /BUSTED!/ })).toHaveLength(1);
 });
 
 test("sidak_hidden_when_window_closed", async () => {

@@ -34,7 +34,7 @@ function renderTaksir(wallet?: Partial<WalletApi>, trigger = vi.fn()) {
     call: vi.fn(async () => ({ txHash: "h" })),
     ...wallet,
   };
-  render(
+  const { unmount } = render(
     <MemoryRouter>
       <WalletContext.Provider value={api}>
         <StageContext.Provider value={{ setPage: vi.fn(), trigger }}>
@@ -43,7 +43,7 @@ function renderTaksir(wallet?: Partial<WalletApi>, trigger = vi.fn()) {
       </WalletContext.Provider>
     </MemoryRouter>,
   );
-  return { api, trigger };
+  return { api, trigger, unmount };
 }
 
 test("shows_connect_without_wallet", async () => {
@@ -68,3 +68,24 @@ test("taksir_returns_to_idle_on_cancel", async () => {
   await waitFor(() => expect(screen.getByRole("button", { name: "APPRAISE (50 $TAKSIR)" })).toBeEnabled());
   expect(trigger.mock.calls.map((c) => c[0])).toEqual(["thinking", "idle"]);
 });
+
+test("taksir_stops_thinking_when_page_is_left", async () => {
+  const data = "a\nb\nc\nd\ne";
+  vi.mocked(view).mockImplementation(async (method: string) => {
+    if (method === "get_params") return PARAMS;
+    if (method === "get_stats") return { appraisal_count: 4 };
+    if (method === "ft_balance_of") return "425000000000000000000";
+    if (method === "get_appraisal") return { id: 4, owner: "me.testnet", data, status: "Pending" };
+    throw new Error(method);
+  });
+  const { trigger, unmount } = renderTaksir({ accountId: "me.testnet" });
+  fireEvent.change(screen.getByLabelText(/one item per line/i), { target: { value: data } });
+  fireEvent.click(await screen.findByRole("button", { name: "APPRAISE (50 $TAKSIR)" }));
+  expect(await screen.findByText("MR. X IS THINKING…")).toBeInTheDocument();
+  const reads = () => vi.mocked(view).mock.calls.filter((c) => c[0] === "get_appraisal").length;
+  unmount();
+  await waitFor(() => expect(trigger).toHaveBeenLastCalledWith("idle"));
+  const after = reads();
+  await new Promise((r) => setTimeout(r, 3500));
+  expect(reads()).toBe(after);
+}, 10000);

@@ -1,10 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { POLL_MS, SOFT_TIMEOUT_MS } from "../chain/config";
 import { near, taksir } from "../chain/format";
 import { view } from "../chain/rpc";
 import { reversed, shuffledDifferent } from "../chain/shuffle";
 import type { Appraisal, Challenge, Params } from "../chain/types";
-import { awaitResult } from "../hooks/awaitResult";
+import { awaitResult, isAbort } from "../hooks/awaitResult";
 import { windowLeftMs } from "../pages/epoch";
 import { useStage } from "../scene/SceneCanvas";
 import { txErrorMessage } from "../wallet/tx";
@@ -33,6 +33,8 @@ export function SidakPanel({ a, p, now, onDone }: { a: Appraisal; p: Params; now
   const [message, setMessage] = useState<string | null>(null);
   const [bust, setBust] = useState<Challenge | null>(null);
   const abort = useRef<AbortController | null>(null);
+  // Leaving the page stops the polling, and the card stops "thinking".
+  useEffect(() => () => abort.current?.abort(), []);
 
   const blocked = sidakBlocked(a, p, now);
   const deposit = (BigInt(p.exec_deposit) + BigInt(p.storage_fee)).toString();
@@ -77,7 +79,7 @@ export function SidakPanel({ a, p, now, onDone }: { a: Appraisal; p: Params; now
       }
       onDone();
     } catch (e) {
-      setMessage(txErrorMessage(e));
+      if (!isAbort(e)) setMessage(txErrorMessage(e));
     } finally {
       setBusy(false);
       setSlow(false);
@@ -85,7 +87,8 @@ export function SidakPanel({ a, p, now, onDone }: { a: Appraisal; p: Params; now
     }
   }
 
-  if (bust && bust.price !== null && a.price !== null)
+  // Bridges the gap until the case reloads as Caught and shows its own BustCard.
+  if (bust && a.status !== "Caught" && bust.price !== null && a.price !== null)
     return <BustCard caseId={a.id} p1={a.price} p2={bust.price} reward={bust.reward} hunter={bust.challenger} />;
 
   return (
