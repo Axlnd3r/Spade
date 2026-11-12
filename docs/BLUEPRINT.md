@@ -2,6 +2,8 @@
 
 > **Status file ini:** spesifikasi build, bukan README publik.
 > Di Section 6 file ini dipindah ke `docs/BLUEPRINT.md`, lalu `README.md` publik ditulis ulang untuk juri.
+>
+> **Sudah dipindah.** File ini dulu bernama `README.md`. Dokumen dan plan di `docs/` yang menyebut "README.md Section N" atau "bagian 2.3" merujuk ke file ini. README publik ada di `../README.md`.
 
 | | |
 |---|---|

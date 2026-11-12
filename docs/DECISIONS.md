@@ -1,6 +1,6 @@
 # Keputusan
 
-Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blueprint (`README.md`, nanti `docs/BLUEPRINT.md`). Format: Konteks / Keputusan / Alasan.
+Catatan setiap keputusan yang menyimpang dari, menafsirkan, atau melengkapi blueprint (`docs/BLUEPRINT.md`, dulu `README.md`). Format: Konteks / Keputusan / Alasan.
 
 ## D-1 Toolchain Rust di WSL
 
