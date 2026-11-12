@@ -5,9 +5,10 @@ import { contractErrorMessage, near, taksir } from "../chain/format";
 import { view } from "../chain/rpc";
 import type { Appraisal, Params, Stats } from "../chain/types";
 import { awaitResult, findNewAppraisal, isAbort } from "../hooks/awaitResult";
+import { useNow } from "../hooks/useNow";
 import { useView } from "../hooks/useView";
 import { useStage } from "../scene/SceneCanvas";
-import { GhostButton, PageTitle } from "../ui/bits";
+import { GhostButton, Meter, PageTitle } from "../ui/bits";
 import { ResultCard } from "../ui/ResultCard";
 import { txErrorMessage } from "../wallet/tx";
 import { useWallet } from "../wallet/WalletProvider";
@@ -35,14 +36,19 @@ export default function Taksir() {
   const [message, setMessage] = useState<string | null>(null);
   const [slow, setSlow] = useState(false);
   const [result, setResult] = useState<Appraisal | null>(null);
+  /** When Mr. X started thinking, for the seconds shown beside the status. */
+  const [since, setSince] = useState<number | null>(null);
+  const now = useNow();
+  const gutter = useRef<HTMLDivElement>(null);
   const abort = useRef<AbortController | null>(null);
   // Leaving the page stops the polling, and the card stops "thinking".
   useEffect(() => () => abort.current?.abort(), []);
 
   const p = params.data;
+  const limits = p ?? LIMITS;
   const lines = normalizeLines(text);
   const bytes = new TextEncoder().encode(text).length;
-  const problem = validateData(text, lines, p ?? LIMITS);
+  const problem = validateData(text, lines, limits);
   const deposit = p ? (BigInt(p.exec_deposit) + BigInt(p.storage_fee)).toString() : null;
   const fee = p ? taksir(p.appraisal_fee, 0) : null;
   const busy = phase !== "idle";
@@ -64,10 +70,12 @@ export default function Taksir() {
     setSlow(false);
     setPhase("sending");
     trigger("thinking");
+    let event: "idle" | "reveal" = "idle";
     try {
       const { appraisal_count } = await view<Stats>("get_stats");
       await call("appraise", { data: text }, deposit);
       setPhase("thinking");
+      setSince(Date.now());
       const created = await findNewAppraisal(appraisal_count, accountId, text);
       if (!created) throw new Error("Sent, but the new case was not found yet. Check Cases in a minute.");
       abort.current = new AbortController();
@@ -76,20 +84,25 @@ export default function Taksir() {
         (a) => a.status !== "Pending",
         { intervalMs: POLL_MS, softTimeoutMs: SOFT_TIMEOUT_MS, onSoftTimeout: () => setSlow(true), signal: abort.current.signal },
       );
-      if (done.status === "Failed") setMessage("Mr. X didn't answer. Your fee was refunded.");
-      else setResult(done);
+      if (done.status === "Failed") {
+        setMessage("Mr. X didn't answer. Your fee was refunded.");
+      } else {
+        setResult(done);
+        event = "reveal";
+      }
       balance.reload();
     } catch (e) {
       if (!isAbort(e)) setMessage(txErrorMessage(e));
     } finally {
       setPhase("idle");
       setSlow(false);
-      trigger("idle");
+      setSince(null);
+      trigger(event);
     }
   }
 
   return (
-    <main className="page">
+    <main className="page page--form">
       <PageTitle caption="02 / 05 — GET A PRICE" title="TAKSIR" />
       <p className="lead">
         Give Mr. X a list, one item per line. He answers with a price from 1 to 10,000 and one line on why. The answer is
@@ -110,25 +123,51 @@ export default function Taksir() {
         <label htmlFor="data" className="muted">
           One item per line, 5–100 lines, up to 2,000 bytes. The same lines in any order can only be priced once.
         </label>
-        <textarea
-          id="data"
-          className="data-input"
-          rows={8}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          disabled={busy}
-          spellCheck={false}
-        />
-        <p className="caption" aria-live="polite">
-          {lines.length} LINES · {bytes.toLocaleString("en")} / 2,000 BYTES
-        </p>
+        <div className="data-field">
+          <div ref={gutter} className="data-gutter" aria-hidden="true">
+            {Array.from({ length: text.split("\n").length }, (_, i) => (
+              <span key={i}>{i + 1}</span>
+            ))}
+          </div>
+          <textarea
+            id="data"
+            className="data-input"
+            rows={8}
+            wrap="off"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onScroll={(e) => {
+              if (gutter.current) gutter.current.scrollTop = e.currentTarget.scrollTop;
+            }}
+            disabled={busy}
+            spellCheck={false}
+          />
+        </div>
+        <div className="meters" aria-live="polite">
+          <Meter label="LINES" value={lines.length} min={limits.min_rows} max={limits.max_rows} />
+          <Meter label="BYTES" value={bytes} max={limits.max_data_bytes} />
+        </div>
         {problem ? <p className="form-error">{contractErrorMessage(problem)}</p> : null}
-        <p className="muted">
-          {fee && deposit
-            ? `You pay ${fee} $TAKSIR (burned) + ${near(deposit)} for the enclave run and storage; about 0.006 NEAR comes back.`
-            : "Loading the contract's fees…"}
-          {accountId && balance.data ? ` Balance: ${taksir(balance.data, 0)} $TAKSIR.` : ""}
-        </p>
+        <dl className="receipt">
+          <div>
+            <dt className="caption">FEE</dt>
+            <dd>{fee ? `${fee} $TAKSIR, burned` : "…"}</dd>
+          </div>
+          <div>
+            <dt className="caption">DEPOSIT</dt>
+            <dd>{deposit ? `${near(deposit)} for the enclave run and storage` : "…"}</dd>
+          </div>
+          <div>
+            <dt className="caption">COMES BACK</dt>
+            <dd>about 0.006 NEAR</dd>
+          </div>
+          {accountId && balance.data ? (
+            <div>
+              <dt className="caption">YOUR BALANCE</dt>
+              <dd>{taksir(balance.data, 0)} $TAKSIR</dd>
+            </div>
+          ) : null}
+        </dl>
         <div className="row">
           {accountId ? (
             <GhostButton onClick={appraise} disabled={busy || !!problem || !deposit}>
@@ -139,9 +178,12 @@ export default function Taksir() {
           )}
           {phase === "sending" ? <span className="caption">CONFIRM IN YOUR WALLET…</span> : null}
           {phase === "thinking" ? (
-            <span className="caption">
-              {slow ? "MR. X IS STILL THINKING. THIS PAGE UPDATES WHEN HE ANSWERS." : "MR. X IS THINKING…"}
-            </span>
+            <>
+              <span className="caption">
+                {slow ? "MR. X IS STILL THINKING. THIS PAGE UPDATES WHEN HE ANSWERS." : "MR. X IS THINKING…"}
+              </span>
+              {since !== null ? <span className="caption muted">{Math.max(0, Math.floor((now - since) / 1000))} S</span> : null}
+            </>
           ) : null}
         </div>
         {message ? (

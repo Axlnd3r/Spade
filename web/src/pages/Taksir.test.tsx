@@ -37,7 +37,7 @@ function renderTaksir(wallet?: Partial<WalletApi>, trigger = vi.fn()) {
   const { unmount } = render(
     <MemoryRouter>
       <WalletContext.Provider value={api}>
-        <StageContext.Provider value={{ setPage: vi.fn(), trigger, setMenu: vi.fn(), preview: vi.fn() }}>
+        <StageContext.Provider value={{ setPage: vi.fn(), trigger, setMenu: vi.fn(), preview: vi.fn(), travel: vi.fn(() => 0) }}>
           <Taksir />
         </StageContext.Provider>
       </WalletContext.Provider>
@@ -49,6 +49,19 @@ function renderTaksir(wallet?: Partial<WalletApi>, trigger = vi.fn()) {
 test("shows_connect_without_wallet", async () => {
   renderTaksir();
   expect(await screen.findByRole("button", { name: "CONNECT WALLET" })).toBeEnabled();
+});
+
+test("shows_meters_and_what_it_costs", async () => {
+  renderTaksir({ accountId: "me.testnet" });
+  await screen.findByRole("button", { name: "APPRAISE (50 $TAKSIR)" });
+  expect(screen.getByRole("meter", { name: "LINES" })).toHaveAttribute("aria-valuenow", "6");
+  expect(screen.getByRole("meter", { name: "LINES" })).toHaveAttribute("aria-valuemax", "100");
+  expect(screen.getByRole("meter", { name: "BYTES" })).toHaveAttribute("aria-valuenow", "145");
+  expect(screen.getByText("FEE").nextElementSibling).toHaveTextContent("50 $TAKSIR, burned");
+  expect(screen.getByText("DEPOSIT").nextElementSibling).toHaveTextContent("0.0571 NEAR");
+  expect(screen.getByText("YOUR BALANCE").nextElementSibling).toHaveTextContent("425 $TAKSIR");
+  fireEvent.change(screen.getByLabelText(/one item per line/i), { target: { value: "a\nb\nc" } });
+  expect(screen.getByRole("meter", { name: "LINES" })).toHaveAttribute("aria-valuenow", "3");
 });
 
 test("submit_disabled_until_valid", async () => {

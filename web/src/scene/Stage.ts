@@ -7,11 +7,12 @@ import { makeCard, type Card } from "./card";
 import { FORMS, type CardForm } from "./cardArt";
 import { makeEmbers, type Embers } from "./embers";
 import { makeFloor, type Floor } from "./floor";
-import { makeWarp, type Warp } from "./warp";
+import { DIVE_S, EMERGE_S, HOLD_S, SWAP_MS } from "./travel";
+import { CAMERA_ONLY_LAYER, makeTunnel, type Tunnel } from "./tunnel";
 import { prefersReducedMotion } from "./webgl";
 
 export type StagePage = "home" | "inner";
-export type StageEvent = "thinking" | "idle" | "held" | "busted" | "burn";
+export type StageEvent = "thinking" | "idle" | "reveal" | "held" | "busted" | "burn";
 
 const SPIN_PERIOD_S = 20;
 const BOB_AMPLITUDE = 0.08;
@@ -52,7 +53,7 @@ function radialTexture(): THREE.CanvasTexture {
 }
 
 /** One persistent three.js scene: Mr. X's glass card over a wet floor. React talks to it through
- * setPage/setForm/trigger/warp; everything else (loop, resize, visibility, dragging) is internal. */
+ * setPage/setForm/travel/trigger; everything else (loop, resize, visibility, dragging) is internal. */
 export class Stage {
   private renderer!: THREE.WebGLRenderer;
   private composer!: EffectComposer;
@@ -62,13 +63,17 @@ export class Stage {
   private card!: Card;
   private floor!: Floor;
   private embers!: Embers;
-  private warpFx!: Warp;
+  private tunnel!: Tunnel;
   private halo!: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   private haloTex = radialTexture();
   private raf = 0;
   private reduced = prefersReducedMotion();
   private page: StagePage = "home";
   private form: CardForm = "gembok";
+  /** Seconds into a page change (see travel.ts), or -1 when the card is at rest on a page. */
+  private travelT = -1;
+  /** Mr. X is thinking: the card steps forward. */
+  private focus = false;
   /** A form waiting for the card to turn edge-on, and how long it has waited. */
   private pendingForm: CardForm | null = null;
   private pendingAge = 0;
@@ -134,9 +139,10 @@ export class Stage {
     this.card.setForm(this.form);
     this.floor = makeFloor(w, h);
     this.embers = makeEmbers();
-    this.warpFx = makeWarp();
+    this.tunnel = makeTunnel();
     this.scene.add(this.halo, this.card.group, this.floor.group, this.embers.points);
-    this.camera.add(this.warpFx.lines);
+    this.camera.layers.enable(CAMERA_ONLY_LAYER);
+    this.camera.add(this.tunnel.group);
 
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
@@ -253,26 +259,51 @@ export class Stage {
     this.flash = 0.35;
   }
 
-  warp() {
-    if (!this.reduced) this.warpFx.start();
+  /** A page change: the camera dives into the card, a tunnel in the next page's light takes the
+   * whole view, and the card is waiting in its new form when the view clears. Returns how long the
+   * old page should stay (ms); 0 when there is no journey (reduced motion). */
+  travel(form: CardForm): number {
+    if (this.reduced || !this.card) {
+      this.setForm(form);
+      return 0;
+    }
+    this.form = form;
+    this.idle.set(FORMS[form].color);
+    if (this.burnTimer < 0) this.colorTarget.copy(this.idle);
+    this.pendingForm = form;
+    this.pendingAge = 0;
+    this.travelT = 0;
+    return SWAP_MS;
   }
 
   trigger(event: StageEvent) {
     switch (event) {
       case "thinking":
         this.spinTarget = this.reduced ? 0 : 4;
+        this.focus = true;
         break;
       case "idle":
         this.spinTarget = 1;
+        this.focus = false;
         this.colorTarget.copy(this.idle);
+        break;
+      case "reveal":
+        // The answer is in: the card turns over with a flash and steps back.
+        this.spinTarget = 1;
+        this.focus = false;
+        this.colorTarget.copy(this.idle);
+        this.flip();
+        this.flash = 0.6;
         break;
       case "held":
         this.spinTarget = 1;
+        this.focus = false;
         this.color.copy(HELD);
         this.flash = 0.6;
         break;
       case "busted":
         this.spinTarget = 1;
+        this.focus = false;
         this.color.copy(BUSTED);
         this.colorTarget.copy(BUSTED);
         this.burnTimer = 0;
@@ -290,7 +321,7 @@ export class Stage {
     this.card.dispose();
     this.floor.dispose();
     this.embers.dispose();
-    this.warpFx.dispose();
+    this.tunnel.dispose();
     this.halo.geometry.dispose();
     this.halo.material.dispose();
     this.haloTex.dispose();
@@ -322,6 +353,7 @@ export class Stage {
     this.renderer.setSize(w, h, false);
     this.composer.setSize(w, h);
     this.floor.setSize(w, h);
+    this.tunnel.setView(this.camera.fov, this.camera.aspect);
   }
 
   private snapToLayout() {
@@ -331,13 +363,43 @@ export class Stage {
     this.glow = l.glow;
   }
 
+  /** Where the card is heading: its place on the page, forward while Mr. X thinks, or straight at
+   * the camera while a page change dives into it. */
+  private target() {
+    const l = layout(this.page, this.camera.aspect);
+    if (this.travelT >= 0 && this.travelT < DIVE_S) return { x: 0, y: 0.15, scale: 3.4, glow: 1 };
+    if (this.focus && this.camera.aspect >= 1) return { x: l.x - 0.5, y: l.y, scale: l.scale * 1.35, glow: 1 };
+    return l;
+  }
+
   private tick(dt: number) {
     const t = this.timer.getElapsed();
-    const l = layout(this.page, this.camera.aspect);
+
+    // Page change: dive, hold, emerge. While the tunnel holds the view the card takes its new form
+    // and its place on the next page, a little large, so it settles as the view clears.
+    let cover = 0;
+    if (this.travelT >= 0) {
+      const before = this.travelT;
+      this.travelT += dt;
+      const u = this.travelT;
+      const ease = (x: number) => x * x * (3 - 2 * x);
+      cover = u < DIVE_S ? ease(u / DIVE_S) : u < DIVE_S + HOLD_S ? 1 : 1 - ease(Math.min(1, (u - DIVE_S - HOLD_S) / EMERGE_S));
+      if (before < DIVE_S && u >= DIVE_S) {
+        if (this.pendingForm) this.card.setForm(this.pendingForm);
+        this.pendingForm = null;
+        this.snapToLayout();
+        this.scale *= 1.25;
+      }
+      if (u >= DIVE_S + HOLD_S + EMERGE_S) this.travelT = -1;
+    }
+    const diving = this.travelT >= 0 && this.travelT < DIVE_S;
+
+    const l = this.target();
     const k = 1 - Math.exp(-dt * 3);
-    this.pos.x += (l.x - this.pos.x) * k;
-    this.pos.y += (l.y - this.pos.y) * k;
-    this.scale += (l.scale - this.scale) * k;
+    const move = diving ? 1 - Math.exp(-dt * 9) : k;
+    this.pos.x += (l.x - this.pos.x) * move;
+    this.pos.y += (l.y - this.pos.y) * move;
+    this.scale += (l.scale - this.scale) * move;
     this.glow += (l.glow - this.glow) * k;
 
     // Spin: a slow base turn (none for reduced motion). A throw, a flip or a form change adds
@@ -345,7 +407,13 @@ export class Stage {
     this.spin += (this.spinTarget - this.spin) * k;
     const base = this.reduced ? 0 : ((Math.PI * 2) / SPIN_PERIOD_S) * this.spin;
     const held = !!this.drag?.turn;
-    if (!held) {
+    if (diving) {
+      // Turn the nearer face square to the camera: the view goes in through it.
+      const face = Math.round(this.angle / Math.PI) * Math.PI;
+      this.angle += (face - this.angle) * move;
+      this.vel = 0;
+      this.tilt -= this.tilt * move;
+    } else if (!held) {
       this.vel += (base - this.vel) * k;
       this.angle += this.vel * dt;
       this.tilt -= this.tilt * k;
@@ -394,7 +462,7 @@ export class Stage {
     this.card.setColor(this.color);
 
     this.embers.update(dt);
-    this.warpFx.update(dt);
+    this.tunnel.update(dt, cover, this.idle);
     this.composer.render(dt);
   }
 }

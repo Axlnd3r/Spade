@@ -11,9 +11,18 @@ export interface StageApi {
   setMenu(open: boolean): void;
   /** Show another page's card form (the menu item under the pointer); null returns to this page's. */
   preview(form: CardForm | null): void;
+  /** Start the journey to a page whose card form is `form`; returns how long the page being left
+   * should stay on screen (ms), 0 when there is no journey. */
+  travel(form: CardForm): number;
 }
 
-export const StageContext = createContext<StageApi>({ setPage() {}, trigger() {}, setMenu() {}, preview() {} });
+export const StageContext = createContext<StageApi>({
+  setPage() {},
+  trigger() {},
+  setMenu() {},
+  preview() {},
+  travel: () => 0,
+});
 
 /** Commands for the 3D stage; harmless no-ops when WebGL is unavailable. */
 export function useStage(): StageApi {
@@ -27,7 +36,6 @@ export function SceneCanvas({ children }: { children: ReactNode }) {
   const [preview, setPreview] = useState<CardForm | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const stage = useRef<Stage | null>(null);
-  const firstRoute = useRef(true);
   const { pathname } = useLocation();
   const page: StagePage = menu || pathname === "/" ? "home" : "inner";
   const form = preview ?? formForPath(pathname);
@@ -63,17 +71,13 @@ export function SceneCanvas({ children }: { children: ReactNode }) {
     stage.current?.setForm(form);
   }, [form]);
 
-  useEffect(() => {
-    if (firstRoute.current) firstRoute.current = false;
-    else stage.current?.warp();
-  }, [pathname]);
-
   const api = useMemo<StageApi>(
     () => ({
       setPage: (p) => stage.current?.setPage(p),
       trigger: (e) => stage.current?.trigger(e),
       setMenu,
       preview: setPreview,
+      travel: (f) => stage.current?.travel(f) ?? 0,
     }),
     [],
   );

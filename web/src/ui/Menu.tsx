@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { NavLink } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import { formForPath } from "../scene/cardArt";
 import { useStage } from "../scene/SceneCanvas";
 
@@ -11,13 +11,15 @@ export const MENU_ITEMS = [
   { n: "05", label: "VERIFY", to: "/verify", sub: "CHECK THE SEALS" },
 ] as const;
 
-/** Full-screen menu in the ohzi manner: one big list beside the card, which takes the form of the
- * item under the pointer; the current page white, the rest dimmed. */
+/** Full-screen menu in the ohzi manner: one big list beside the card. The item under the pointer
+ * stands out at full size, the line above the list names it, and the card takes its form. */
 export function Menu({ open, onClose }: { open: boolean; onClose(): void }) {
   const nav = useRef<HTMLElement>(null);
   // True while the menu moves focus itself, which must not count as the visitor choosing an item.
   const settling = useRef(false);
   const { setMenu, preview } = useStage();
+  const { pathname } = useLocation();
+  const [picked, setPicked] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -31,18 +33,30 @@ export function Menu({ open, onClose }: { open: boolean; onClose(): void }) {
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.classList.remove("menu-open");
+      setPicked(null);
       preview(null);
       setMenu(false);
     };
   }, [open, onClose, setMenu, preview]);
 
   if (!open) return null;
+  // The item under the pointer, else the page we are on (a case belongs to CASES).
+  const here = MENU_ITEMS.find((i) => formForPath(i.to) === formForPath(pathname) && (i.to !== "/" || pathname === "/"));
+  const active = MENU_ITEMS.find((i) => i.to === picked) ?? here ?? MENU_ITEMS[0];
+  const pick = (to: string | null) => {
+    setPicked(to);
+    preview(to === null ? null : formForPath(to));
+  };
+
   return (
     <nav ref={nav} className="menu" aria-label="Main">
-      <ol className="menu__list" onMouseLeave={() => preview(null)}>
+      <p className="menu__pretitle caption" aria-live="polite">
+        {active.n} / 05 — {active.sub}
+      </p>
+      <ol className="menu__list" onMouseLeave={() => pick(null)}>
         {MENU_ITEMS.map((item) => {
           const show = () => {
-            if (!settling.current) preview(formForPath(item.to));
+            if (!settling.current) pick(item.to);
           };
           return (
             <li key={item.to}>
@@ -52,12 +66,9 @@ export function Menu({ open, onClose }: { open: boolean; onClose(): void }) {
                 onClick={onClose}
                 onMouseEnter={show}
                 onFocus={show}
-                className="menu__item"
+                className={item === active ? "menu__item menu__item--active" : "menu__item"}
               >
-                <span className="caption">
-                  {item.n} / 05 — {item.sub}
-                </span>
-                <span className="menu__label">{item.label}</span>
+                {item.label}
               </NavLink>
             </li>
           );

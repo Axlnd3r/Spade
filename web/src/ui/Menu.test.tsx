@@ -29,8 +29,25 @@ test("menu_renders_nothing_when_closed", () => {
   expect(screen.queryAllByRole("link")).toHaveLength(0);
 });
 
+test("menu_names_the_item_under_the_pointer", () => {
+  render(
+    <MemoryRouter initialEntries={["/ledger"]}>
+      <Menu open onClose={() => {}} />
+    </MemoryRouter>,
+  );
+  // The page we are on, until the pointer picks another item.
+  expect(screen.getByText("04 / 05 — EVERY BURN")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /LEDGER/ })).toHaveClass("menu__item--active");
+  fireEvent.mouseEnter(screen.getByRole("link", { name: /CASES/ }));
+  expect(screen.getByText("03 / 05 — CALL HIS BLUFF")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /CASES/ })).toHaveClass("menu__item--active");
+  expect(screen.getByRole("link", { name: /LEDGER/ })).not.toHaveClass("menu__item--active");
+  fireEvent.mouseLeave(screen.getByRole("list"));
+  expect(screen.getByText("04 / 05 — EVERY BURN")).toBeInTheDocument();
+});
+
 test("menu_shows_each_items_card_form_on_the_stage", () => {
-  const stage = { setPage: vi.fn(), trigger: vi.fn(), setMenu: vi.fn(), preview: vi.fn() };
+  const stage = { setPage: vi.fn(), trigger: vi.fn(), setMenu: vi.fn(), preview: vi.fn(), travel: vi.fn(() => 0) };
   const { unmount } = render(
     <MemoryRouter>
       <StageContext.Provider value={stage}>

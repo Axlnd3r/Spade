@@ -164,6 +164,12 @@ a:hover {
   opacity: 0;
   visibility: hidden;
 }
+/* Names the item that stands out: "03 / 05 — CALL HIS BLUFF". */
+.menu__pretitle {
+  margin: 0 0 -22px;
+  padding-left: 24px;
+  color: var(--ash);
+}
 .menu__list {
   list-style: none;
   margin: 0;
@@ -172,35 +178,31 @@ a:hover {
   align-self: flex-start;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 2px;
 }
+/* Every item waits small and dim; the one under the pointer (or the page we are on) stands at
+   full size beside a white bar. */
 .menu__item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding-left: 22px;
-  border-left: 1px solid transparent;
-  text-decoration: none;
-  color: var(--ash);
-  opacity: 0.45;
-  transition:
-    opacity 0.25s ease,
-    color 0.25s ease;
-}
-.menu__item:hover,
-.menu__item:focus-visible {
-  opacity: 0.8;
-  color: var(--white);
-}
-.menu__item[aria-current="page"] {
-  opacity: 1;
-  color: var(--white);
-  border-left-color: var(--white);
-}
-.menu__label {
+  display: block;
+  padding: 6px 0 6px 22px;
+  border-left: 2px solid transparent;
   font-weight: 700;
-  font-size: clamp(32px, 6vw, 56px);
+  font-size: clamp(34px, 5vw, 60px);
+  line-height: 1.15;
   letter-spacing: 0.067em;
+  text-decoration: none;
+  color: var(--white);
+  opacity: 0.3;
+  transform: scale(0.75);
+  transform-origin: left center;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+.menu__item--active {
+  opacity: 1;
+  transform: none;
+  border-left-color: var(--white);
 }
 .menu__close {
   align-self: flex-start;
@@ -209,13 +211,120 @@ a:hover {
 @media (max-aspect-ratio: 1/1) {
   .menu {
     justify-content: flex-start;
-    gap: 24px;
+    gap: 28px;
     padding-top: 38vh;
     padding-bottom: 32px;
   }
-  .menu__list {
-    gap: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu__item {
+    transition: none;
   }
+}
+
+/* ---- moving between pages ---- */
+/* The page being left fades while the stage's tunnel takes the view; the header steps aside too. */
+.route--out {
+  opacity: 0;
+  transform: translateY(-14px);
+  pointer-events: none;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+.header {
+  transition: opacity 0.3s ease;
+}
+.travelling .header {
+  opacity: 0;
+  pointer-events: none;
+}
+.travelling .header > * {
+  pointer-events: none;
+}
+/* The page arrived at: its blocks rise in one after another. The Home hero stages its own lines. */
+.route--in .page > :not(.hero),
+.route--in .footer {
+  animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.route--in .page > :nth-child(1) {
+  animation-delay: 0.05s;
+}
+.route--in .page > :nth-child(2) {
+  animation-delay: 0.14s;
+}
+.route--in .page > :nth-child(3) {
+  animation-delay: 0.23s;
+}
+.route--in .page > :nth-child(4) {
+  animation-delay: 0.32s;
+}
+.route--in .page > :nth-child(n + 5),
+.route--in .footer {
+  animation-delay: 0.41s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .route--out {
+    transition: none;
+  }
+  .route--in .page > :not(.hero),
+  .route--in .footer {
+    animation: none;
+  }
+}
+
+/* ---- the pointer as a ball of glass ---- */
+html.has-lens,
+html.has-lens body {
+  /* The lens is the pointer; links, buttons and fields keep their own cursors. */
+  cursor: none !important;
+}
+.lens-defs {
+  position: absolute;
+}
+.lens {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  width: 60px;
+  height: 60px;
+  margin: -30px 0 0 -30px;
+  pointer-events: none;
+  will-change: transform;
+}
+.lens__glass {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  /* Plain glass first, for browsers that do not take an SVG filter as a backdrop. */
+  -webkit-backdrop-filter: brightness(1.25);
+  backdrop-filter: brightness(1.25);
+  backdrop-filter: url(#lens-bend) brightness(1.12);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
+    inset 0 0 9px rgba(255, 255, 255, 0.45),
+    0 6px 18px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease;
+}
+.lens[data-mode="hidden"] .lens__glass {
+  opacity: 0;
+  transform: scale(0.4);
+}
+/* Over a link or button: a small ring beside the hand cursor. */
+.lens[data-mode="ring"] .lens__glass {
+  transform: scale(0.42);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* Over the card (the stage asks for a grab cursor there): the glass swells, then tightens in the hand. */
+html[style*="grab"] .lens[data-mode="lens"] .lens__glass {
+  transform: scale(1.3);
+}
+html[style*="grabbing"] .lens[data-mode="lens"] .lens__glass {
+  transform: scale(0.85);
 }
 
 /* ---- page ---- */
@@ -237,8 +346,8 @@ a:hover {
 .page-title h1 {
   margin: 0;
   font-weight: 700;
-  font-size: clamp(28px, 4vw, 38px);
-  line-height: 1.2;
+  font-size: clamp(32px, 4.6vw, 64px);
+  line-height: 1.1;
   letter-spacing: 0.067em;
   text-transform: uppercase;
 }
@@ -308,9 +417,12 @@ p {
   color: var(--void);
 }
 
+/* Frosted glass: the stage shows through, blurred. */
 .panel {
-  border: var(--hairline);
-  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.045);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   padding: 32px;
   display: flex;
   flex-direction: column;
@@ -634,21 +746,142 @@ p {
 }
 
 /* ---- forms & results ---- */
+/* A page that is one form: its column stops short of the card. */
+.page--form .panel,
+.page--form .lead {
+  max-width: 660px;
+}
+/* The list field: line numbers in a gutter beside the text. */
+.data-field {
+  position: relative;
+  padding-left: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.55);
+}
+.data-field:focus-within {
+  outline: 1px solid var(--white);
+}
+.data-gutter {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 52px;
+  padding: 16px 12px 16px 0;
+  overflow: hidden;
+  border-right: var(--hairline);
+  text-align: right;
+  font-size: 14px;
+  line-height: 1.7;
+  font-variant-numeric: tabular-nums;
+  color: rgba(207, 207, 207, 0.5);
+  user-select: none;
+}
+.data-gutter span {
+  display: block;
+}
 .data-input {
+  display: block;
   width: 100%;
   min-height: 200px;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(0, 0, 0, 0.7);
+  border: 0;
+  background: transparent;
   color: var(--white);
   font: inherit;
   font-size: 14px;
   line-height: 1.7;
   letter-spacing: 0.04em;
+  /* One line of the list per row, so the numbers stay beside their lines. */
+  white-space: pre;
+  overflow: auto;
   resize: vertical;
 }
 .data-input:focus {
-  outline: 1px solid var(--white);
+  outline: none;
+}
+.meters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 32px;
+}
+.meter {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+}
+.meter .caption {
+  font-size: 11px;
+}
+.meter__value {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+  color: var(--fog);
+}
+.meter__track {
+  grid-column: 1 / -1;
+  position: relative;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.25);
+}
+.meter__fill {
+  position: absolute;
+  left: 0;
+  top: -1px;
+  height: 3px;
+  background: var(--white);
+  transition: width 0.3s ease;
+}
+.meter__min {
+  position: absolute;
+  top: -5px;
+  width: 1px;
+  height: 11px;
+  background: var(--ash);
+}
+/* Out of range: the bar goes dim; the error line below says why. */
+.meter--under .meter__fill,
+.meter--over .meter__fill {
+  background: var(--ash);
+  opacity: 0.55;
+}
+.receipt {
+  margin: 0;
+  border-top: var(--hairline);
+}
+.receipt > div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: var(--hairline);
+}
+.receipt dt {
+  font-size: 11px;
+}
+.receipt dd {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  color: var(--fog);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .meters {
+    grid-template-columns: 1fr;
+  }
+  .receipt > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
 }
 .form-error {
   color: var(--white);

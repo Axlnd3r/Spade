@@ -88,8 +88,8 @@ void main() {
   vec3 v = normalize(vV);
   float f = pow(1.0 - abs(dot(n, v)), 2.5);
   float spec = pow(max(dot(reflect(-normalize(vec3(0.35, 0.55, 0.75)), n), v), 0.0), 60.0);
-  vec3 col = uRim * (0.12 + 1.6 * f) + vec3(0.9) * spec;
-  gl_FragColor = vec4(col * uGlow, 0.18 + 0.7 * f + spec);
+  vec3 col = uRim * (0.12 + 1.1 * f) + vec3(0.9) * spec;
+  gl_FragColor = vec4(col * uGlow, 0.18 + 0.5 * f + spec);
 }`,
     transparent: true,
     depthWrite: false,

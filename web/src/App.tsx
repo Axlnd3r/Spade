@@ -9,7 +9,9 @@ import Verify from "./pages/Verify";
 import { SceneCanvas } from "./scene/SceneCanvas";
 import { Footer } from "./ui/Footer";
 import { Header } from "./ui/Header";
+import { Lens } from "./ui/Lens";
 import { Menu } from "./ui/Menu";
+import { PageTransition } from "./ui/PageTransition";
 import { WalletProvider } from "./wallet/WalletProvider";
 
 export function Shell() {
@@ -19,16 +21,23 @@ export function Shell() {
     <>
       <Header onMenu={() => setMenu(true)} />
       <Menu open={menu} onClose={close} />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/taksir" element={<Taksir />} />
-        <Route path="/cases" element={<Cases />} />
-        <Route path="/case/:id" element={<Case />} />
-        <Route path="/ledger" element={<Ledger />} />
-        <Route path="/verify" element={<Verify />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-      <Footer />
+      <PageTransition>
+        {(location) => (
+          <>
+            <Routes location={location}>
+              <Route path="/" element={<Home />} />
+              <Route path="/taksir" element={<Taksir />} />
+              <Route path="/cases" element={<Cases />} />
+              <Route path="/case/:id" element={<Case />} />
+              <Route path="/ledger" element={<Ledger />} />
+              <Route path="/verify" element={<Verify />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+            <Footer />
+          </>
+        )}
+      </PageTransition>
+      <Lens />
     </>
   );
 }
