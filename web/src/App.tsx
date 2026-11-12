@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import Case from "./pages/Case";
 import Cases from "./pages/Cases";
+import How from "./pages/How";
 import Landing from "./pages/Landing";
 import Ledger from "./pages/Ledger";
 import Overview from "./pages/Overview";
@@ -27,6 +28,7 @@ export function Shell() {
           <>
             <Routes location={location}>
               <Route path="/" element={<Landing />} />
+              <Route path="/how" element={<How />} />
               <Route path="/overview" element={<Overview />} />
               <Route path="/taksir" element={<Taksir />} />
               <Route path="/cases" element={<Cases />} />

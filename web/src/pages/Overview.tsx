@@ -68,7 +68,7 @@ export default function Overview() {
 
   return (
     <main className="page">
-      <PageTitle caption="02 / 06 — LIVE FROM TESTNET" title="OVERVIEW" />
+      <PageTitle caption="03 / 07 — LIVE FROM TESTNET" title="OVERVIEW" />
       <p className="lead">
         Mr. X is an AI sealed inside a TEE. He prices your data. Shuffle the lines and ask again: if his price jumps, you
         caught him bluffing, and the treasury pays you.
@@ -107,28 +107,12 @@ export default function Overview() {
 
       <section aria-labelledby="how-title" className="section">
         <h2 id="how-title" className="caption">
-          HOW IT WORKS
+          NEW HERE?
         </h2>
-        <ol className="steps">
-          <li>
-            <span className="steps__n">01</span>
-            <h3>TAKSIR</h3>
-            <p>Mr. X prices your list. 50 $TAKSIR fee, burned.</p>
-          </li>
-          <li>
-            <span className="steps__n">02</span>
-            <h3>SIDAK</h3>
-            <p>Same lines, new order. Stake 25 $TAKSIR.</p>
-          </li>
-          <li>
-            <span className="steps__n">03</span>
-            <h3>VERDICT</h3>
-            <p>
-              Price moves more than 75%? BUSTED: stake back + 50 $TAKSIR from the treasury. Holds steady? Your stake
-              burns.
-            </p>
-          </li>
-        </ol>
+        <p className="lead">Mr. X prices a list. SIDAK checks him with the same lines in a new order. Drag a price and see who gets paid.</p>
+        <div className="row">
+          <GhostButton to="/how">HOW IT WORKS IN ONE MINUTE</GhostButton>
+        </div>
       </section>
 
       <section aria-labelledby="recent-title" className="section">

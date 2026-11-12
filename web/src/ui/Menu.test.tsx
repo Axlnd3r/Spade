@@ -3,16 +3,16 @@ import { MemoryRouter } from "react-router-dom";
 import { StageContext } from "../scene/SceneCanvas";
 import { MENU_ITEMS, Menu } from "./Menu";
 
-test("menu_lists_six_items_and_marks_active", () => {
+test("menu_lists_seven_items_and_marks_active", () => {
   const onClose = vi.fn();
   render(
     <MemoryRouter initialEntries={["/ledger"]}>
       <Menu open onClose={onClose} />
     </MemoryRouter>,
   );
-  expect(MENU_ITEMS.map((i) => i.label)).toEqual(["HOME", "OVERVIEW", "TAKSIR", "CASES", "LEDGER", "VERIFY"]);
+  expect(MENU_ITEMS.map((i) => i.label)).toEqual(["HOME", "HOW IT WORKS", "OVERVIEW", "TAKSIR", "CASES", "LEDGER", "VERIFY"]);
   const links = screen.getAllByRole("link");
-  expect(links).toHaveLength(6);
+  expect(links).toHaveLength(7);
   for (const item of MENU_ITEMS) expect(screen.getByRole("link", { name: new RegExp(item.label) })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /LEDGER/ })).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("link", { name: /HOME/ })).not.toHaveAttribute("aria-current");
@@ -53,14 +53,14 @@ test("menu_names_the_item_under_the_pointer", () => {
     </MemoryRouter>,
   );
   // The page we are on, until the pointer picks another item.
-  expect(screen.getByText("05 / 06 — EVERY BURN")).toBeInTheDocument();
+  expect(screen.getByText("06 / 07 — EVERY BURN")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /LEDGER/ })).toHaveClass("menu__item--active");
   fireEvent.mouseEnter(screen.getByRole("link", { name: /CASES/ }));
-  expect(screen.getByText("04 / 06 — CALL HIS BLUFF")).toBeInTheDocument();
+  expect(screen.getByText("05 / 07 — CALL HIS BLUFF")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /CASES/ })).toHaveClass("menu__item--active");
   expect(screen.getByRole("link", { name: /LEDGER/ })).not.toHaveClass("menu__item--active");
   fireEvent.mouseLeave(screen.getByRole("list"));
-  expect(screen.getByText("05 / 06 — EVERY BURN")).toBeInTheDocument();
+  expect(screen.getByText("06 / 07 — EVERY BURN")).toBeInTheDocument();
 });
 
 test("menu_shows_each_items_card_form_on_the_stage", () => {

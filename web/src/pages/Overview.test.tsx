@@ -93,6 +93,14 @@ test("overview_lists_case_prices_with_thousands", async () => {
   expect(await screen.findByText("10,000")).toBeInTheDocument();
 });
 
+test("overview_points_newcomers_to_how_it_works", () => {
+  vi.mocked(view).mockRejectedValue(new Error("network: down"));
+  renderHome();
+  expect(screen.getByRole("link", { name: "HOW IT WORKS IN ONE MINUTE" })).toHaveAttribute("href", "/how");
+  // The explanation lives in one place: no second copy of the steps here.
+  expect(screen.queryByText("VERDICT")).toBeNull();
+});
+
 test("overview_shows_retry_when_rpc_fails", async () => {
   vi.mocked(view).mockRejectedValue(new Error("network: down"));
   renderHome();

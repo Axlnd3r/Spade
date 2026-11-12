@@ -5,11 +5,12 @@ import { useStage } from "../scene/SceneCanvas";
 
 export const MENU_ITEMS = [
   { n: "01", label: "HOME", to: "/", sub: "MEET MR. X" },
-  { n: "02", label: "OVERVIEW", to: "/overview", sub: "LIVE FROM TESTNET" },
-  { n: "03", label: "TAKSIR", to: "/taksir", sub: "GET A PRICE" },
-  { n: "04", label: "CASES", to: "/cases", sub: "CALL HIS BLUFF" },
-  { n: "05", label: "LEDGER", to: "/ledger", sub: "EVERY BURN" },
-  { n: "06", label: "VERIFY", to: "/verify", sub: "CHECK THE SEALS" },
+  { n: "02", label: "HOW IT WORKS", to: "/how", sub: "IN ONE MINUTE" },
+  { n: "03", label: "OVERVIEW", to: "/overview", sub: "LIVE FROM TESTNET" },
+  { n: "04", label: "TAKSIR", to: "/taksir", sub: "GET A PRICE" },
+  { n: "05", label: "CASES", to: "/cases", sub: "CALL HIS BLUFF" },
+  { n: "06", label: "LEDGER", to: "/ledger", sub: "EVERY BURN" },
+  { n: "07", label: "VERIFY", to: "/verify", sub: "CHECK THE SEALS" },
 ] as const;
 
 /** Full-screen menu in the ohzi manner: one big list beside the card. The item under the pointer
@@ -52,7 +53,7 @@ export function Menu({ open, onClose }: { open: boolean; onClose(): void }) {
   return (
     <nav ref={nav} className="menu" aria-label="Main">
       <p className="menu__pretitle caption" aria-live="polite">
-        {active.n} / 06 — {active.sub}
+        {active.n} / 07 — {active.sub}
       </p>
       <ol className="menu__list" onMouseLeave={() => pick(null)}>
         {MENU_ITEMS.map((item) => {

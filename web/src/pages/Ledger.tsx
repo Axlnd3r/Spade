@@ -68,7 +68,7 @@ export default function Ledger() {
 
   return (
     <main className="page">
-      <PageTitle caption="05 / 06 — EVERY BURN" title="LEDGER" />
+      <PageTitle caption="06 / 07 — EVERY BURN" title="LEDGER" />
       <p className="lead">
         Every mint, burn and reward the contract has made, newest first. $TAKSIR was minted once at launch; since then
         supply only goes down.

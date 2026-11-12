@@ -32,7 +32,7 @@ export default function Cases() {
 
   return (
     <main className="page">
-      <PageTitle caption="04 / 06 — CALL HIS BLUFF" title="CASES" />
+      <PageTitle caption="05 / 07 — CALL HIS BLUFF" title="CASES" />
       <p className="lead">
         Every list Mr. X has priced, newest first. Open one, change the order of its lines and call SIDAK while the
         1-hour window is open.

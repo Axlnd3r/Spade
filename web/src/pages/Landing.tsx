@@ -18,7 +18,7 @@ export default function Landing() {
         </p>
       </div>
       <div className="landing__foot">
-        <Link to="/overview" className="glass-btn stagger" style={step(2)}>
+        <Link to="/how" className="glass-btn stagger" style={step(2)}>
           EXPLORE
         </Link>
         <div className="stagger" style={step(3)}>

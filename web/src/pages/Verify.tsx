@@ -60,7 +60,7 @@ export default function Verify() {
   const p = params.data;
   return (
     <main className="page">
-      <PageTitle caption="06 / 06 — CHECK THE SEALS" title="VERIFY" />
+      <PageTitle caption="07 / 07 — CHECK THE SEALS" title="VERIFY" />
       <p className="lead">
         Don't trust this page: every value below is read live from NEAR testnet, and each one can be checked with your own
         tools.
