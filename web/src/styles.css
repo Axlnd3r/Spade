@@ -348,6 +348,7 @@ p {
   right: 12vw;
   width: min(300px, 40vw);
   transform: translateY(-50%) rotate(-7deg);
+  border-radius: 4%/3%;
   opacity: 0.9;
 }
 .stage-fallback--inner {

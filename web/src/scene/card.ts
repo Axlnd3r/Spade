@@ -1,10 +1,10 @@
 import * as THREE from "three";
-import { BACK_SVG, CARD_H, CARD_W, FRONT_SVG, svgDataUrl } from "./cardArt";
+import { BACK_SVG, CARD_H, CARD_W, FRONT_URL, inkLevels, svgDataUrl } from "./cardArt";
 
 export const CARD_WIDTH = 2.5;
 export const CARD_HEIGHT = 3.5;
 const THICKNESS = 0.03;
-/** Matches the art's rounded corner (rx 16 of 250). */
+/** Rounded corner of the card (rx 16 of 250 in the back art). */
 const CORNER = (16 / 250) * CARD_WIDTH;
 
 export interface Card {
@@ -15,7 +15,8 @@ export interface Card {
   dispose(): void;
 }
 
-function svgTexture(svg: string): THREE.CanvasTexture {
+/** Art drawn into a card-sized canvas with rounded corners left transparent (cut by alphaTest). */
+function artTexture(url: string, ink: boolean): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = CARD_W;
   canvas.height = CARD_H;
@@ -24,10 +25,21 @@ function svgTexture(svg: string): THREE.CanvasTexture {
   tex.anisotropy = 8;
   const img = new Image();
   img.onload = () => {
-    canvas.getContext("2d")?.drawImage(img, 0, 0, CARD_W, CARD_H);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.imageSmoothingQuality = "high";
+    ctx.beginPath();
+    ctx.roundRect(0, 0, CARD_W, CARD_H, (CORNER / CARD_WIDTH) * CARD_W);
+    ctx.clip();
+    ctx.drawImage(img, 0, 0, CARD_W, CARD_H);
+    if (ink) {
+      const d = ctx.getImageData(0, 0, CARD_W, CARD_H);
+      inkLevels(d.data);
+      ctx.putImageData(d, 0, 0);
+    }
     tex.needsUpdate = true;
   };
-  img.src = svgDataUrl(svg);
+  img.src = url;
   return tex;
 }
 
@@ -78,8 +90,8 @@ if (uBurn > 0.0) {
 export function makeCard(): Card {
   const group = new THREE.Group();
   const burn = { value: 0 };
-  const frontTex = svgTexture(FRONT_SVG);
-  const backTex = svgTexture(BACK_SVG);
+  const frontTex = artTexture(FRONT_URL, true);
+  const backTex = artTexture(svgDataUrl(BACK_SVG), false);
 
   const face = (map: THREE.Texture) =>
     new THREE.MeshStandardMaterial({

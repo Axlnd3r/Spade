@@ -1,4 +1,4 @@
-import { BACK_SVG, FRONT_SVG } from "./cardArt";
+import { BACK_SVG, FRONT_URL, INK, inkLevels, PAPER } from "./cardArt";
 
 function parse(svg: string) {
   const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
@@ -6,10 +6,17 @@ function parse(svg: string) {
   return doc;
 }
 
-test("front_is_mr_x_with_spade_staff", () => {
-  const texts = [...parse(FRONT_SVG).getElementsByTagName("text")].map((t) => t.textContent);
-  for (const ch of ["M", "R", "X"]) expect(texts).toContain(ch);
-  expect(FRONT_SVG).toContain("M0,-14 C5,-8 14,-3 14,4");
+test("front_is_the_padlock_art", () => {
+  expect(FRONT_URL).toMatch(/mrx-gembok.*\.png$/);
+});
+
+test("ink_levels_snap_lines_and_paper", () => {
+  const px = new Uint8ClampedArray([10, 10, 10, 255, 250, 250, 250, 255, 128, 128, 128, 255]);
+  inkLevels(px);
+  expect([...px.slice(0, 4)]).toEqual([...INK, 255]);
+  expect([...px.slice(4, 8)]).toEqual([...PAPER, 255]);
+  expect(px[8]).toBeGreaterThan(INK[0]);
+  expect(px[8]).toBeLessThan(PAPER[0]);
 });
 
 test("back_is_the_spade_logo", () => {

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import { FRONT_SVG, svgDataUrl } from "./cardArt";
+import { FRONT_URL } from "./cardArt";
 import type { Stage, StageEvent, StagePage } from "./Stage";
 import { hasWebGL } from "./webgl";
 
@@ -65,7 +65,7 @@ export function SceneCanvas({ children }: { children: ReactNode }) {
       {webgl ? (
         <canvas ref={canvas} className={`stage stage--${page}`} aria-hidden="true" />
       ) : (
-        <img className={`stage-fallback stage-fallback--${page}`} src={svgDataUrl(FRONT_SVG)} alt="Mr. X card" />
+        <img className={`stage-fallback stage-fallback--${page}`} src={FRONT_URL} alt="Mr. X card" />
       )}
       {children}
     </StageContext.Provider>
