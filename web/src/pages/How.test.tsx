@@ -45,6 +45,37 @@ test("how_explains_the_three_steps_with_numbers_from_the_contract", async () => 
   expect(await screen.findByText(/300 \$TAKSIR per epoch/)).toBeInTheDocument();
 });
 
+test("how_says_what_each_role_gets_with_honest_numbers", async () => {
+  vi.mocked(view).mockImplementation(async (method: string) => {
+    if (method === "get_params") return { ...PARAMS, reward_multiplier: 3 };
+    if (method === "get_stats") return { budget: "299998500000000000000" };
+    throw new Error(method);
+  });
+  renderHow();
+  const section = screen.getByRole("region", { name: "WHAT YOU GET" });
+  expect(within(section).getByText(/pawnshop appraiser/)).toBeInTheDocument();
+  expect(within(section).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["ASKER", "HUNTER", "HOLDER"]);
+  const hunter = within(section).getByRole("heading", { name: "HUNTER" }).closest("li")!;
+  // The numbers follow the contract: a 3x reward means breaking even above 1 catch in 4.
+  expect(await within(hunter).findByText(/more than 1 in 4 tries/)).toBeInTheDocument();
+  expect(within(hunter).getByText(/you get it back plus 75/)).toBeInTheDocument();
+  expect(within(hunter).getByText(/farming your own data nets zero/)).toBeInTheDocument();
+  const asker = within(section).getByRole("heading", { name: "ASKER" }).closest("li")!;
+  expect(within(asker).getByText(/Nothing uses the price yet/)).toBeInTheDocument();
+  const holder = within(section).getByRole("heading", { name: "HOLDER" }).closest("li")!;
+  expect(within(holder).getByText(/No dividends and no staking/)).toBeInTheDocument();
+  expect(await within(section).findByText(/about 300 \$TAKSIR in total each epoch/)).toBeInTheDocument();
+  expect(within(section).getByText(/no cash value/)).toBeInTheDocument();
+});
+
+test("how_what_you_get_uses_launch_values_when_the_rpc_is_down", () => {
+  vi.mocked(view).mockRejectedValue(new Error("network: down"));
+  renderHow();
+  const hunter = within(screen.getByRole("region", { name: "WHAT YOU GET" })).getByRole("heading", { name: "HUNTER" }).closest("li")!;
+  expect(within(hunter).getByText(/more than 1 in 3 tries/)).toBeInTheDocument();
+  expect(within(hunter).getByText(/you get it back plus 50/)).toBeInTheDocument();
+});
+
 test("how_still_reads_when_the_rpc_is_down", async () => {
   vi.mocked(view).mockRejectedValue(new Error("network: down"));
   renderHow();

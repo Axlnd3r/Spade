@@ -63,7 +63,10 @@ export default function How() {
   const stake = taksir(p.challenge_stake, 0);
   const reward = taksir((BigInt(p.challenge_stake) * BigInt(p.reward_multiplier)).toString(), 0);
   const limit = p.threshold_bps / 100;
-  const budget = stats.data ? `a budget of ${roundedTaksir(stats.data.budget)} $TAKSIR per epoch` : "a small fixed budget per epoch";
+  const epochBudget = stats.data ? roundedTaksir(stats.data.budget) : null;
+  const budget = epochBudget ? `a budget of ${epochBudget} $TAKSIR per epoch` : "a small fixed budget per epoch";
+  // Staking `stake` to win `reward` on top of getting it back pays off above this share of tries.
+  const oneIn = 1 + p.reward_multiplier;
 
   const body = [
     "There is no mint function. 100,000,000 $TAKSIR were created once, at launch. Every fee, every lost stake and every unused reward is burned, so the supply can only shrink.",
@@ -79,6 +82,43 @@ export default function How() {
         Mr. X is an AI that puts a price on your list. SIDAK checks that he is consistent. If he is not, you are paid from
         the treasury, not by other holders.
       </p>
+
+      <section className="section" aria-labelledby="get-title">
+        <h2 id="get-title" className="caption">
+          WHAT YOU GET
+        </h2>
+        <p className="lead">
+          Think of a pawnshop appraiser. You bring an item and he names a value. A surprise inspector brings the same item in
+          different wrapping: the value should not change. If it jumps, the appraiser is unreliable and the inspector is paid.
+          Mr. X is the appraiser and SIDAK is the inspection. Spade is a bounty for finding where an AI is unreliable, paid in
+          the coin and provable on-chain.
+        </p>
+        <ul className="cards cards--three">
+          <li className="card">
+            <h3>ASKER</h3>
+            <p>{`You pay ${fee} $TAKSIR (burned) and about 0.05 NEAR. You get a price from 1 to 10,000 and one line on why, signed inside a TEE and stored on-chain for anyone to check.`}</p>
+            <p className="card__note">Nothing uses the price yet: today it is an auditable record.</p>
+          </li>
+          <li className="card">
+            <h3>HUNTER</h3>
+            <p>{`You stake ${stake} $TAKSIR. Catch Mr. X and you get it back plus ${reward}. Miss and it is burned. You come out ahead only if you catch him more than 1 in ${oneIn} tries.`}</p>
+            <p className="card__note">
+              Shuffling an ordinary list rarely moves the price, so blind tries lose. Profit comes from spotting a list he can
+              be fooled by, in someone else's case: farming your own data nets zero.
+            </p>
+          </li>
+          <li className="card">
+            <h3>HOLDER</h3>
+            <p>Every fee and every lost stake is burned, so the more Mr. X is used, the smaller the supply.</p>
+            <p className="card__note">No dividends and no staking: if nobody uses it, nothing burns.</p>
+          </li>
+        </ul>
+        <p className="muted how__limits">
+          {epochBudget
+            ? `Rewards are shared by every hunter: about ${epochBudget} $TAKSIR in total each epoch. On testnet the coin has no cash value.`
+            : "Rewards are shared by every hunter, from a small fixed budget each epoch. On testnet the coin has no cash value."}
+        </p>
+      </section>
 
       <section className="section" aria-labelledby="steps-title">
         <h2 id="steps-title" className="caption">
