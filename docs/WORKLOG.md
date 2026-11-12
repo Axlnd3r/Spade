@@ -60,3 +60,10 @@
 - **CHECKPOINT 4:** manusia memilih opsi B, fee 50 (D-15). Kontrak `v2.spade-taksir.testnet` di-deploy dengan 3,5 NEAR. Secret di-whitelist ulang untuk `v2`. E2E lolos 2× di `v2`, dan kedua sidak data jebakan `Caught` dengan untung bersih 0 bagi pembuatnya.
 - **Narasi produk dipilih manusia:** "Rug the AI, not the holders." Maskotnya "Pak Taksir", dengan kartu "KENA SIDAK!" dan papan "epoch sejak AI terakhir kena sidak". Prototipe UI ada di artifact Spade UI. S5 akan memakai referensi UI dari manusia.
 - **Catatan keamanan:** API key NEAR AI sempat tertempel di chat. Manusia diminta mencabutnya dan memasang ulang secret dengan key baru.
+
+## 2026-11-12
+
+- **S5 (web)** selesai dan di-deploy ke GitHub Pages (https://axlnd3r.github.io/Spade/). Polesan UI atas permintaan manusia: kartu kaca yang bisa diputar, menu bergaya OHZI, transisi terowongan, kursor lensa, landing page, lantai air, halaman Overview dan How it works. Detail di `.superpowers/sdd/2026-11-11-section-5-web/progress.md` (lokal, tidak di-commit).
+- **Alur wallet diuji di browser** oleh agen dengan wallet tiruan lewat NEAR Connect dan penandatanganan near-cli (`docs/TESTNET.md`, bagian Web): kasus #4 (Priced 1) dan sidak #4 (Survived). Dua bug UX ditemukan dan diperbaiki. Popup wallet sungguhan belum diuji.
+- **S6 dimulai:** `README.md` publik ditulis (blueprint dipindah ke `docs/BLUEPRINT.md`). Saat menulisnya ditemukan bahwa halaman Verify melebih-lebihkan peran enclave pada tanda tangan NEAR AI; teksnya diperbaiki. Masih kosong: `docs/THREAT_MODEL.md`, `scripts/verify.mjs`, `docs/DEMO.md`.
+- **Langkah manusia yang tersisa:** mencoba wallet sungguhan, menyetujui penghapusan semua access key kontrak (final lock), merekam video, memposting di X (H-6), dan mengirim submission (H-7). Setelah final lock, baris "Access keys" di README harus diperbarui.
