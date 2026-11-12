@@ -206,8 +206,7 @@ a:hover {
   flex-direction: column;
   gap: 14px;
 }
-.page-title h1,
-.display {
+.page-title h1 {
   margin: 0;
   font-weight: 700;
   font-size: clamp(28px, 4vw, 38px);
@@ -245,7 +244,7 @@ p {
 .stats {
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 28px 32px;
   padding-top: 24px;
   border-top: var(--hairline);
@@ -312,6 +311,14 @@ p {
 }
 
 @media (max-width: 640px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+  }
+  .stat__value {
+    font-size: 18px;
+    letter-spacing: 0.04em;
+  }
   .header {
     padding: 16px;
   }
@@ -371,12 +378,121 @@ p {
 
 /* ---- home & lists ---- */
 .hero {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  max-width: 640px;
-  min-height: calc(100vh - 240px);
+  gap: 26px;
+  max-width: 720px;
+  min-height: calc(100vh - 140px);
   justify-content: center;
+}
+.hero__title {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(36px, 5vw, 72px);
+  line-height: 1.08;
+  letter-spacing: 0.067em;
+  text-transform: uppercase;
+}
+.hero__title > span {
+  display: block;
+}
+/* Hero lines arrive one after another; --i is the order. */
+.hero__in {
+  animation: rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(0.25s + var(--i, 0) * 0.14s);
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero__scroll {
+  position: absolute;
+  bottom: 28px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--ash);
+  animation: rise 0.9s 1.2s both;
+}
+.hero__scroll::before {
+  content: "";
+  width: 48px;
+  height: 1px;
+  background: var(--ash);
+}
+/* Portrait: the card floats in the top third (Stage layout), so the hero starts below it. */
+@media (max-aspect-ratio: 1/1) {
+  .hero {
+    justify-content: flex-start;
+    padding-top: max(0px, calc(38vh - 140px));
+    padding-bottom: 72px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero__in,
+  .hero__scroll {
+    animation: none;
+  }
+}
+
+/* "Days since the last accident" board. */
+.streak {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px 48px;
+  max-width: 760px;
+  padding: 40px 0;
+  border-top: var(--hairline);
+  border-bottom: var(--hairline);
+}
+.streak__value {
+  font-weight: 100;
+  font-size: clamp(120px, 16vw, 220px);
+  line-height: 0.9;
+  letter-spacing: 0.067em;
+  font-variant-numeric: tabular-nums;
+}
+.streak__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+.streak__label {
+  font-weight: 700;
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+}
+.streak__facts {
+  margin: 0;
+}
+.streak__facts dd {
+  margin: 6px 0 0;
+  font-weight: 600;
+  font-size: 24px;
+  letter-spacing: 0.06em;
+}
+.streak .link-quiet {
+  padding-left: 0;
+  color: var(--white);
+}
+@media (max-width: 640px) {
+  .streak {
+    grid-template-columns: 1fr;
+    padding: 28px 0;
+  }
 }
 .section {
   display: flex;

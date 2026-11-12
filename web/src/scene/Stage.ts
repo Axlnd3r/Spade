@@ -21,9 +21,10 @@ const BUSTED = new THREE.Color("#ff6a1a");
 
 /** Where the card sits for a page, for wide and narrow screens. */
 function layout(page: StagePage, aspect: number) {
-  // Narrow screens: below the headline on Home, small and dim behind text elsewhere.
-  if (aspect < 1) return page === "home" ? { x: 0, y: -0.75, scale: 0.46, glow: 0.7 } : { x: 0, y: -0.3, scale: 0.42, glow: 0.35 };
-  return page === "home" ? { x: 1.7, y: 0.1, scale: 0.78, glow: 1 } : { x: 2.8, y: 0.1, scale: 0.6, glow: 0.6 };
+  // Narrow screens: above the headline on Home (10–35% of the height, kept clear by .hero), small and dim
+  // behind text elsewhere.
+  if (aspect < 1) return page === "home" ? { x: 0, y: 1.72, scale: 0.46, glow: 0.7 } : { x: 0, y: -0.3, scale: 0.42, glow: 0.35 };
+  return page === "home" ? { x: 1.8, y: 0.1, scale: 0.9, glow: 1 } : { x: 2.8, y: 0.1, scale: 0.6, glow: 0.6 };
 }
 
 function radialTexture(): THREE.CanvasTexture {

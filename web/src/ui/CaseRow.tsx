@@ -23,7 +23,7 @@ export function CaseRow({ a, windowMs, now }: { a: Appraisal; windowMs?: number;
             {[`${lines} LINES`, `${a.challenge_ids.length} SIDAK`, windowNote(a, windowMs, now)].filter(Boolean).join(" · ")}
           </span>
         </span>
-        <span className="case-row__price">{a.price ?? "—"}</span>
+        <span className="case-row__price">{a.price?.toLocaleString("en") ?? "—"}</span>
         <StatusTag kind="appraisal" status={a.status} />
       </Link>
     </li>

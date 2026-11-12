@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Home from "./Home";
 
@@ -51,6 +51,46 @@ test("home_renders_live_stats", async () => {
   expect(screen.getByText("250")).toBeInTheDocument();
   expect(screen.getByText("MINTED SINCE LAUNCH").nextElementSibling).toHaveTextContent("0");
   expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("RUG THE AI, NOT THE HOLDERS.");
+});
+
+const CASE = {
+  owner: "spade-taksir.testnet",
+  data: "warung price list\nb\nc\nd\ne",
+  created_ms: 0,
+  priced_ms: 0,
+  active_challenges: 1,
+};
+
+test("home_shows_streak_board_and_last_bust", async () => {
+  vi.mocked(view).mockImplementation(async (method: string) => {
+    if (method === "get_stats") return { ...STATS, clean_streak: 3, best_streak: 7 };
+    if (method === "get_params") return { epoch_ms: 600000, challenge_window_ms: 3600000 };
+    if (method === "get_log") return [{ kind: "Mint", ts_ms: 1794384000000, amount: "0", account_id: null, ref_id: null }];
+    if (method === "get_appraisals")
+      return [
+        { ...CASE, id: 2, status: "Caught", price: 10000, challenge_ids: [2] },
+        { ...CASE, id: 3, status: "Priced", price: 2500, challenge_ids: [3] },
+      ];
+    throw new Error(method);
+  });
+  renderHome();
+  const board = await screen.findByRole("region", { name: "EPOCHS SINCE MR. X GOT BUSTED" });
+  expect(within(board).getByText("03")).toBeInTheDocument();
+  expect(within(board).getByText("LONGEST CLEAN RUN").nextElementSibling).toHaveTextContent("07");
+  expect(within(board).getByText(/1 EPOCH = 10 MIN/)).toBeInTheDocument();
+  expect(await within(board).findByRole("link", { name: /LAST BUST · CASE #2/ })).toHaveAttribute("href", "/case/2");
+});
+
+test("home_lists_case_prices_with_thousands", async () => {
+  vi.mocked(view).mockImplementation(async (method: string) => {
+    if (method === "get_stats") return STATS;
+    if (method === "get_params") return { epoch_ms: 600000, challenge_window_ms: 3600000 };
+    if (method === "get_log") return [];
+    if (method === "get_appraisals") return [{ ...CASE, id: 2, status: "Caught", price: 10000, challenge_ids: [2] }];
+    throw new Error(method);
+  });
+  renderHome();
+  expect(await screen.findByText("10,000")).toBeInTheDocument();
 });
 
 test("home_shows_retry_when_rpc_fails", async () => {
