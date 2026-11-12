@@ -3,21 +3,38 @@ import { MemoryRouter } from "react-router-dom";
 import { StageContext } from "../scene/SceneCanvas";
 import { MENU_ITEMS, Menu } from "./Menu";
 
-test("menu_lists_five_items_and_marks_active", () => {
+test("menu_lists_six_items_and_marks_active", () => {
   const onClose = vi.fn();
   render(
     <MemoryRouter initialEntries={["/ledger"]}>
       <Menu open onClose={onClose} />
     </MemoryRouter>,
   );
-  expect(MENU_ITEMS.map((i) => i.label)).toEqual(["HOME", "TAKSIR", "CASES", "LEDGER", "VERIFY"]);
+  expect(MENU_ITEMS.map((i) => i.label)).toEqual(["HOME", "OVERVIEW", "TAKSIR", "CASES", "LEDGER", "VERIFY"]);
   const links = screen.getAllByRole("link");
-  expect(links).toHaveLength(5);
+  expect(links).toHaveLength(6);
   for (const item of MENU_ITEMS) expect(screen.getByRole("link", { name: new RegExp(item.label) })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /LEDGER/ })).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("link", { name: /HOME/ })).not.toHaveAttribute("aria-current");
   fireEvent.keyDown(document, { key: "Escape" });
   expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test("menu_marks_a_case_page_as_cases_and_overview_apart_from_home", () => {
+  const { unmount } = render(
+    <MemoryRouter initialEntries={["/case/3"]}>
+      <Menu open onClose={() => {}} />
+    </MemoryRouter>,
+  );
+  expect(screen.getByRole("link", { name: /CASES/ })).toHaveClass("menu__item--active");
+  unmount();
+  render(
+    <MemoryRouter initialEntries={["/overview"]}>
+      <Menu open onClose={() => {}} />
+    </MemoryRouter>,
+  );
+  expect(screen.getByRole("link", { name: /OVERVIEW/ })).toHaveClass("menu__item--active");
+  expect(screen.getByRole("link", { name: /HOME/ })).not.toHaveClass("menu__item--active");
 });
 
 test("menu_renders_nothing_when_closed", () => {
@@ -36,14 +53,14 @@ test("menu_names_the_item_under_the_pointer", () => {
     </MemoryRouter>,
   );
   // The page we are on, until the pointer picks another item.
-  expect(screen.getByText("04 / 05 — EVERY BURN")).toBeInTheDocument();
+  expect(screen.getByText("05 / 06 — EVERY BURN")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /LEDGER/ })).toHaveClass("menu__item--active");
   fireEvent.mouseEnter(screen.getByRole("link", { name: /CASES/ }));
-  expect(screen.getByText("03 / 05 — CALL HIS BLUFF")).toBeInTheDocument();
+  expect(screen.getByText("04 / 06 — CALL HIS BLUFF")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /CASES/ })).toHaveClass("menu__item--active");
   expect(screen.getByRole("link", { name: /LEDGER/ })).not.toHaveClass("menu__item--active");
   fireEvent.mouseLeave(screen.getByRole("list"));
-  expect(screen.getByText("04 / 05 — EVERY BURN")).toBeInTheDocument();
+  expect(screen.getByText("05 / 06 — EVERY BURN")).toBeInTheDocument();
 });
 
 test("menu_shows_each_items_card_form_on_the_stage", () => {

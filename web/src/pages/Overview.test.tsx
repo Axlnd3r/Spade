@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import Home from "./Home";
+import Overview from "./Overview";
 
 vi.mock("../chain/rpc", () => ({ view: vi.fn() }));
 import { view } from "../chain/rpc";
@@ -28,7 +28,7 @@ const STATS = {
 function renderHome() {
   return render(
     <MemoryRouter>
-      <Home />
+      <Overview />
     </MemoryRouter>,
   );
 }
@@ -38,7 +38,7 @@ beforeEach(() => {
   vi.mocked(view).mockReset();
 });
 
-test("home_renders_live_stats", async () => {
+test("overview_renders_live_stats", async () => {
   vi.mocked(view).mockImplementation(async (method: string) => {
     if (method === "get_stats") return STATS;
     if (method === "get_params") return { epoch_ms: 600000, challenge_window_ms: 3600000 };
@@ -50,7 +50,7 @@ test("home_renders_live_stats", async () => {
   expect(await screen.findByText("99,999,750")).toBeInTheDocument();
   expect(screen.getByText("250")).toBeInTheDocument();
   expect(screen.getByText("MINTED SINCE LAUNCH").nextElementSibling).toHaveTextContent("0");
-  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("RUG THE AI, NOT THE HOLDERS.");
+  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("OVERVIEW");
 });
 
 const CASE = {
@@ -61,7 +61,7 @@ const CASE = {
   active_challenges: 1,
 };
 
-test("home_shows_streak_board_and_last_bust", async () => {
+test("overview_shows_streak_board_and_last_bust", async () => {
   vi.mocked(view).mockImplementation(async (method: string) => {
     if (method === "get_stats") return { ...STATS, clean_streak: 3, best_streak: 7 };
     if (method === "get_params") return { epoch_ms: 600000, challenge_window_ms: 3600000 };
@@ -81,7 +81,7 @@ test("home_shows_streak_board_and_last_bust", async () => {
   expect(await within(board).findByRole("link", { name: /LAST BUST · CASE #2/ })).toHaveAttribute("href", "/case/2");
 });
 
-test("home_lists_case_prices_with_thousands", async () => {
+test("overview_lists_case_prices_with_thousands", async () => {
   vi.mocked(view).mockImplementation(async (method: string) => {
     if (method === "get_stats") return STATS;
     if (method === "get_params") return { epoch_ms: 600000, challenge_window_ms: 3600000 };
@@ -93,9 +93,9 @@ test("home_lists_case_prices_with_thousands", async () => {
   expect(await screen.findByText("10,000")).toBeInTheDocument();
 });
 
-test("home_shows_retry_when_rpc_fails", async () => {
+test("overview_shows_retry_when_rpc_fails", async () => {
   vi.mocked(view).mockRejectedValue(new Error("network: down"));
   renderHome();
   expect(await screen.findByText("Can't reach NEAR testnet. Retrying…")).toBeInTheDocument();
-  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("RUG THE AI, NOT THE HOLDERS.");
+  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("OVERVIEW");
 });

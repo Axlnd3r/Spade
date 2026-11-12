@@ -2,8 +2,9 @@ import { useCallback, useState } from "react";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import Case from "./pages/Case";
 import Cases from "./pages/Cases";
-import Home from "./pages/Home";
+import Landing from "./pages/Landing";
 import Ledger from "./pages/Ledger";
+import Overview from "./pages/Overview";
 import Taksir from "./pages/Taksir";
 import Verify from "./pages/Verify";
 import { SceneCanvas } from "./scene/SceneCanvas";
@@ -25,7 +26,8 @@ export function Shell() {
         {(location) => (
           <>
             <Routes location={location}>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<Landing />} />
+              <Route path="/overview" element={<Overview />} />
               <Route path="/taksir" element={<Taksir />} />
               <Route path="/cases" element={<Cases />} />
               <Route path="/case/:id" element={<Case />} />
@@ -33,7 +35,7 @@ export function Shell() {
               <Route path="/verify" element={<Verify />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-            <Footer />
+            {location.pathname !== "/" ? <Footer /> : null}
           </>
         )}
       </PageTransition>

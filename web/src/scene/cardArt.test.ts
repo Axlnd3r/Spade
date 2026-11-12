@@ -8,6 +8,7 @@ function parse(svg: string) {
 
 test("each_page_has_its_card_form", () => {
   expect(formForPath("/")).toBe("gembok");
+  expect(formForPath("/overview")).toBe("gembok");
   expect(formForPath("/taksir")).toBe("tongkat");
   expect(formForPath("/cases")).toBe("pistol");
   expect(formForPath("/case/3")).toBe("pistol");

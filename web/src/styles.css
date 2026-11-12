@@ -154,12 +154,14 @@ a:hover {
 }
 /* Menu open: the pages step back, so only the list and the card remain. */
 .page,
+.landing,
 .footer {
   transition:
     opacity 0.3s ease,
     visibility 0.3s;
 }
 .menu-open .page,
+.menu-open .landing,
 .menu-open .footer {
   opacity: 0;
   visibility: hidden;
@@ -242,8 +244,8 @@ a:hover {
 .travelling .header > * {
   pointer-events: none;
 }
-/* The page arrived at: its blocks rise in one after another. The Home hero stages its own lines. */
-.route--in .page > :not(.hero),
+/* The page arrived at: its blocks rise in one after another. The landing staggers its own lines. */
+.route--in .page > *,
 .route--in .footer {
   animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
@@ -267,7 +269,7 @@ a:hover {
   .route--out {
     transition: none;
   }
-  .route--in .page > :not(.hero),
+  .route--in .page > *,
   .route--in .footer {
     animation: none;
   }
@@ -491,6 +493,12 @@ p {
   border-radius: 4%/3%;
   opacity: 0.9;
 }
+.stage-fallback--landing {
+  right: 50%;
+  top: 50%;
+  width: min(280px, 38vw);
+  transform: translate(50%, -50%) rotate(-5deg);
+}
 .stage-fallback--inner {
   right: 4vw;
   width: min(200px, 30vw);
@@ -518,28 +526,8 @@ p {
 }
 
 /* ---- home & lists ---- */
-.hero {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 26px;
-  max-width: 720px;
-  min-height: calc(100vh - 140px);
-  justify-content: center;
-}
-.hero__title {
-  margin: 0;
-  font-weight: 700;
-  font-size: clamp(36px, 5vw, 72px);
-  line-height: 1.08;
-  letter-spacing: 0.067em;
-  text-transform: uppercase;
-}
-.hero__title > span {
-  display: block;
-}
-/* Hero lines arrive one after another; --i is the order. */
-.hero__in {
+/* Things that arrive one after another; --i is the order. */
+.stagger {
   animation: rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
   animation-delay: calc(0.25s + var(--i, 0) * 0.14s);
 }
@@ -553,36 +541,91 @@ p {
     transform: none;
   }
 }
-.hero__scroll {
-  position: absolute;
-  bottom: 28px;
-  left: 0;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  font-size: 11px;
-  letter-spacing: 0.3em;
-  color: var(--ash);
-  animation: rise 0.9s 1.2s both;
-}
-.hero__scroll::before {
-  content: "";
-  width: 48px;
-  height: 1px;
-  background: var(--ash);
-}
-/* Portrait: the card floats in the top third (Stage layout), so the hero starts below it. */
-@media (max-aspect-ratio: 1/1) {
-  .hero {
-    justify-content: flex-start;
-    padding-top: max(0px, calc(38vh - 140px));
-    padding-bottom: 72px;
+@media (prefers-reduced-motion: reduce) {
+  .stagger {
+    animation: none;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .hero__in,
-  .hero__scroll {
-    animation: none;
+
+/* ---- landing: one screen, in the manner of ohzi's ---- */
+/* The card is drawn by the stage behind it, in the middle; the title sits above it, the way in below. */
+.landing {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: 112px clamp(20px, 6vw, 80px) 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  /* The middle is the card's: it stays grabbable through here. */
+  pointer-events: none;
+}
+.landing a {
+  pointer-events: auto;
+}
+.landing__head,
+.landing__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+.landing__foot {
+  gap: 28px;
+}
+.landing__title {
+  margin: 0;
+  max-width: 1100px;
+  font-weight: 700;
+  font-size: clamp(24px, 3.4vw, 48px);
+  line-height: 1.2;
+  letter-spacing: 0.067em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.7);
+}
+.landing__sub {
+  max-width: 940px;
+  font-weight: 300;
+  font-size: clamp(12px, 1.15vw, 17px);
+  text-wrap: balance;
+  line-height: 1.6;
+  letter-spacing: 0.1em;
+  color: var(--fog);
+}
+.landing .glossary {
+  justify-content: center;
+  font-size: 12px;
+}
+/* The ohzi button: frosted glass with a bright rim and a soft inner glow. */
+.glass-btn {
+  display: inline-block;
+  padding: 20px 52px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
+  background: linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    inset 0 0 14px rgba(255, 255, 255, 0.2),
+    0 8px 16px rgba(17, 17, 17, 0.2);
+  color: var(--white);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+}
+.glass-btn:hover,
+.glass-btn:focus-visible {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+@media (max-width: 640px) {
+  .landing {
+    padding-top: 96px;
   }
 }
 

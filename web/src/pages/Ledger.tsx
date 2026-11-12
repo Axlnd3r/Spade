@@ -5,7 +5,7 @@ import { logKindLabel, taksir } from "../chain/format";
 import type { LogEntry, Stats } from "../chain/types";
 import { useView } from "../hooks/useView";
 import { GhostButton, PageTitle } from "../ui/bits";
-import { RETRY_TEXT } from "./Home";
+import { RETRY_TEXT } from "./Overview";
 
 const PAGE = 50;
 
@@ -68,7 +68,7 @@ export default function Ledger() {
 
   return (
     <main className="page">
-      <PageTitle caption="04 / 05 — EVERY BURN" title="LEDGER" />
+      <PageTitle caption="05 / 06 — EVERY BURN" title="LEDGER" />
       <p className="lead">
         Every mint, burn and reward the contract has made, newest first. $TAKSIR was minted once at launch; since then
         supply only goes down.

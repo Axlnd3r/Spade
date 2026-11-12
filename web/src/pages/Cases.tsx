@@ -5,7 +5,7 @@ import { useNow } from "../hooks/useNow";
 import { useView } from "../hooks/useView";
 import { GhostButton, PageTitle } from "../ui/bits";
 import { CaseRow } from "../ui/CaseRow";
-import { RETRY_TEXT } from "./Home";
+import { RETRY_TEXT } from "./Overview";
 
 const PAGE = 20;
 
@@ -32,7 +32,7 @@ export default function Cases() {
 
   return (
     <main className="page">
-      <PageTitle caption="03 / 05 — CALL HIS BLUFF" title="CASES" />
+      <PageTitle caption="04 / 06 — CALL HIS BLUFF" title="CASES" />
       <p className="lead">
         Every list Mr. X has priced, newest first. Open one, change the order of its lines and call SIDAK while the
         1-hour window is open.

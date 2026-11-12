@@ -23,6 +23,7 @@ export const FORMS: Record<CardForm, { art: string | null; color: string }> = {
 };
 
 export function formForPath(pathname: string): CardForm {
+  // "/" and "/overview" share the padlock: Mr. X, locked in his TEE.
   if (pathname === "/taksir") return "tongkat";
   if (pathname === "/cases" || pathname.startsWith("/case/")) return "pistol";
   if (pathname === "/ledger") return "sekop";

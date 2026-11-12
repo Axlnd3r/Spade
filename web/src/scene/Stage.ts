@@ -11,7 +11,8 @@ import { DIVE_S, EMERGE_S, HOLD_S, SWAP_MS } from "./travel";
 import { CAMERA_ONLY_LAYER, makeTunnel, type Tunnel } from "./tunnel";
 import { prefersReducedMotion } from "./webgl";
 
-export type StagePage = "home" | "inner";
+/** landing: the card alone in the middle; home: large on the right (the menu); inner: small and dim behind the text. */
+export type StagePage = "landing" | "home" | "inner";
 export type StageEvent = "thinking" | "idle" | "reveal" | "held" | "busted" | "burn";
 
 const SPIN_PERIOD_S = 20;
@@ -33,9 +34,13 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 
 /** Where the card sits for a page, for wide and narrow screens. */
 function layout(page: StagePage, aspect: number) {
-  // Narrow screens: above the headline on Home (10–35% of the height, kept clear by .hero), small and dim
-  // behind text elsewhere.
-  if (aspect < 1) return page === "home" ? { x: 0, y: 1.72, scale: 0.46, glow: 0.7 } : { x: 0, y: -0.3, scale: 0.42, glow: 0.35 };
+  if (aspect < 1) {
+    // Narrow screens: the landing title sits above the card and the button below it; the menu puts the card
+    // in the top third (kept clear by .menu); elsewhere it is small and dim behind the text.
+    if (page === "landing") return { x: 0, y: 0.05, scale: 0.74, glow: 1 };
+    return page === "home" ? { x: 0, y: 1.72, scale: 0.46, glow: 0.7 } : { x: 0, y: -0.3, scale: 0.42, glow: 0.35 };
+  }
+  if (page === "landing") return { x: 0, y: -0.1, scale: 0.74, glow: 1 };
   return page === "home" ? { x: 1.8, y: 0.1, scale: 0.9, glow: 1 } : { x: 2.8, y: 0.1, scale: 0.6, glow: 0.6 };
 }
 
@@ -68,7 +73,7 @@ export class Stage {
   private haloTex = radialTexture();
   private raf = 0;
   private reduced = prefersReducedMotion();
-  private page: StagePage = "home";
+  private page: StagePage = "landing";
   private form: CardForm = "gembok";
   /** Seconds into a page change (see travel.ts), or -1 when the card is at rest on a page. */
   private travelT = -1;
@@ -460,6 +465,7 @@ export class Stage {
     this.halo.scale.setScalar(this.scale);
     this.card.setGlow(this.glow);
     this.card.setColor(this.color);
+    this.floor.update(t, this.pos.x, this.color, this.glow * pulse * (1 + this.flash * 1.5));
 
     this.embers.update(dt);
     this.tunnel.update(dt, cover, this.idle);

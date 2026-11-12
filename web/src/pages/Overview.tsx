@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { STATS_REFRESH_MS } from "../chain/config";
 import { taksir } from "../chain/format";
@@ -6,7 +6,7 @@ import type { Appraisal, LogEntry, Params, Stats } from "../chain/types";
 import { useNow } from "../hooks/useNow";
 import { useView } from "../hooks/useView";
 import { useStage } from "../scene/SceneCanvas";
-import { GhostButton, Stat } from "../ui/bits";
+import { GhostButton, PageTitle, Stat } from "../ui/bits";
 import { CaseRow } from "../ui/CaseRow";
 import { mmss, nextEpochMs } from "./epoch";
 
@@ -42,7 +42,7 @@ function StreakBoard({ s, epochMs, lastBust }: { s?: Stats; epochMs?: number; la
   );
 }
 
-export default function Home() {
+export default function Overview() {
   const stats = useView<Stats>("get_stats", {}, STATS_REFRESH_MS);
   const params = useView<Params>("get_params");
   const genesis = useView<LogEntry[]>("get_log", { from: 0, limit: 1 });
@@ -67,33 +67,18 @@ export default function Home() {
   const countdown = epochMs && genesisMs ? mmss(nextEpochMs(genesisMs, epochMs, now) - now) : "—";
 
   return (
-    <main className="page page--home">
-      <section className="hero" aria-labelledby="hero-title">
-        <span className="caption hero__in" style={{ "--i": 0 } as CSSProperties}>
-          MEET MR. X
-        </span>
-        <h1 id="hero-title" className="hero__title">
-          <span className="hero__in" style={{ "--i": 1 } as CSSProperties}>
-            RUG THE AI,
-          </span>{" "}
-          <span className="hero__in" style={{ "--i": 2 } as CSSProperties}>
-            NOT THE HOLDERS.
-          </span>
-        </h1>
-        <p className="lead hero__in" style={{ "--i": 3 } as CSSProperties}>
-          Mr. X is an AI sealed inside a TEE. He prices your data. Shuffle the lines and ask again: if his price jumps,
-          you caught him bluffing, and the treasury pays you.
-        </p>
-        <div className="row hero__in" style={{ "--i": 4 } as CSSProperties}>
-          <GhostButton to="/cases">CALL HIS BLUFF</GhostButton>
-          <Link to="/taksir" className="link-quiet">
-            GET A PRICE →
-          </Link>
-        </div>
-        <span className="hero__scroll" aria-hidden="true">
-          SCROLL
-        </span>
-      </section>
+    <main className="page">
+      <PageTitle caption="02 / 06 — LIVE FROM TESTNET" title="OVERVIEW" />
+      <p className="lead">
+        Mr. X is an AI sealed inside a TEE. He prices your data. Shuffle the lines and ask again: if his price jumps, you
+        caught him bluffing, and the treasury pays you.
+      </p>
+      <div className="row">
+        <GhostButton to="/cases">CALL HIS BLUFF</GhostButton>
+        <Link to="/taksir" className="link-quiet">
+          GET A PRICE →
+        </Link>
+      </div>
 
       <StreakBoard s={s} epochMs={epochMs} lastBust={lastBust} />
 

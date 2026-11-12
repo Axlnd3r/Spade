@@ -103,7 +103,7 @@ export default function Taksir() {
 
   return (
     <main className="page page--form">
-      <PageTitle caption="02 / 05 — GET A PRICE" title="TAKSIR" />
+      <PageTitle caption="03 / 06 — GET A PRICE" title="TAKSIR" />
       <p className="lead">
         Give Mr. X a list, one item per line. He answers with a price from 1 to 10,000 and one line on why. The answer is
         signed inside the TEE and stored on-chain, so anyone can check it, and anyone can call his bluff.

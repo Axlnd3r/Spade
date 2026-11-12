@@ -5,10 +5,11 @@ import { useStage } from "../scene/SceneCanvas";
 
 export const MENU_ITEMS = [
   { n: "01", label: "HOME", to: "/", sub: "MEET MR. X" },
-  { n: "02", label: "TAKSIR", to: "/taksir", sub: "GET A PRICE" },
-  { n: "03", label: "CASES", to: "/cases", sub: "CALL HIS BLUFF" },
-  { n: "04", label: "LEDGER", to: "/ledger", sub: "EVERY BURN" },
-  { n: "05", label: "VERIFY", to: "/verify", sub: "CHECK THE SEALS" },
+  { n: "02", label: "OVERVIEW", to: "/overview", sub: "LIVE FROM TESTNET" },
+  { n: "03", label: "TAKSIR", to: "/taksir", sub: "GET A PRICE" },
+  { n: "04", label: "CASES", to: "/cases", sub: "CALL HIS BLUFF" },
+  { n: "05", label: "LEDGER", to: "/ledger", sub: "EVERY BURN" },
+  { n: "06", label: "VERIFY", to: "/verify", sub: "CHECK THE SEALS" },
 ] as const;
 
 /** Full-screen menu in the ohzi manner: one big list beside the card. The item under the pointer
@@ -41,8 +42,8 @@ export function Menu({ open, onClose }: { open: boolean; onClose(): void }) {
 
   if (!open) return null;
   // The item under the pointer, else the page we are on (a case belongs to CASES).
-  const here = MENU_ITEMS.find((i) => formForPath(i.to) === formForPath(pathname) && (i.to !== "/" || pathname === "/"));
-  const active = MENU_ITEMS.find((i) => i.to === picked) ?? here ?? MENU_ITEMS[0];
+  const base = pathname.startsWith("/case/") ? "/cases" : pathname;
+  const active = MENU_ITEMS.find((i) => i.to === picked) ?? MENU_ITEMS.find((i) => i.to === base) ?? MENU_ITEMS[0];
   const pick = (to: string | null) => {
     setPicked(to);
     preview(to === null ? null : formForPath(to));
@@ -51,7 +52,7 @@ export function Menu({ open, onClose }: { open: boolean; onClose(): void }) {
   return (
     <nav ref={nav} className="menu" aria-label="Main">
       <p className="menu__pretitle caption" aria-live="polite">
-        {active.n} / 05 — {active.sub}
+        {active.n} / 06 — {active.sub}
       </p>
       <ol className="menu__list" onMouseLeave={() => pick(null)}>
         {MENU_ITEMS.map((item) => {

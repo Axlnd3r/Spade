@@ -7,7 +7,7 @@ import { useView } from "../hooks/useView";
 import { PageTitle, StatusTag } from "../ui/bits";
 import { BustCard } from "../ui/BustCard";
 import { SidakPanel } from "../ui/SidakPanel";
-import { RETRY_TEXT } from "./Home";
+import { RETRY_TEXT } from "./Overview";
 
 function NotFound() {
   return (

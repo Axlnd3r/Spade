@@ -37,7 +37,7 @@ export function SceneCanvas({ children }: { children: ReactNode }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const stage = useRef<Stage | null>(null);
   const { pathname } = useLocation();
-  const page: StagePage = menu || pathname === "/" ? "home" : "inner";
+  const page: StagePage = menu ? "home" : pathname === "/" ? "landing" : "inner";
   const form = preview ?? formForPath(pathname);
   // What the stage starts with: three.js may finish loading after the page or form has changed.
   const latest = useRef({ page, form });
