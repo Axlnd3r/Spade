@@ -64,6 +64,30 @@ test("shows_meters_and_what_it_costs", async () => {
   expect(screen.getByRole("meter", { name: "LINES" })).toHaveAttribute("aria-valuenow", "3");
 });
 
+test("taksir_scrolls_the_answer_into_view", async () => {
+  const data = "a\nb\nc\nd\ne";
+  const scrollIntoView = vi.fn();
+  Element.prototype.scrollIntoView = scrollIntoView;
+  try {
+    vi.mocked(view).mockImplementation(async (method: string) => {
+      if (method === "get_params") return PARAMS;
+      if (method === "get_stats") return { appraisal_count: 4 };
+      if (method === "ft_balance_of") return "425000000000000000000";
+      if (method === "get_appraisal") return { id: 4, owner: "me.testnet", data, status: "Priced", price: 1234, reason: "because" };
+      throw new Error(method);
+    });
+    renderTaksir({ accountId: "me.testnet" });
+    fireEvent.change(screen.getByLabelText(/one item per line/i), { target: { value: data } });
+    fireEvent.click(await screen.findByRole("button", { name: "APPRAISE (50 $TAKSIR)" }));
+    await screen.findByText("MR. X SAYS · CASE #4");
+    // The scroll runs in an effect, a moment after the card is on screen.
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+  } finally {
+    // jsdom has no scrollIntoView of its own.
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  }
+});
+
 test("submit_disabled_until_valid", async () => {
   renderTaksir({ accountId: "me.testnet" });
   const submit = await screen.findByRole("button", { name: "APPRAISE (50 $TAKSIR)" });

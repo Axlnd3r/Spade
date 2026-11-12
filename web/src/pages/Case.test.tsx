@@ -169,6 +169,33 @@ test("sidak_bust_shows_one_card", async () => {
   expect(screen.getAllByRole("region", { name: /BUSTED!/ })).toHaveLength(1);
 });
 
+test("sidak_says_confirm_in_wallet_before_mr_x_thinks", async () => {
+  mockChain(appraisal({}));
+  let release = () => {};
+  const wallet: WalletApi = {
+    accountId: "hunter.testnet",
+    signIn: vi.fn(async () => {}),
+    signOut: vi.fn(async () => {}),
+    call: vi.fn(() => new Promise<{ txHash: string }>((resolve) => (release = () => resolve({ txHash: "h" })))),
+  };
+  render(
+    <MemoryRouter initialEntries={["/case/3"]}>
+      <WalletContext.Provider value={wallet}>
+        <Routes>
+          <Route path="/case/:id" element={<Case />} />
+        </Routes>
+      </WalletContext.Provider>
+    </MemoryRouter>,
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "REVERSE" }));
+  fireEvent.click(screen.getByRole("button", { name: /CALL SIDAK/ }));
+  expect(await screen.findByText("CONFIRM IN YOUR WALLET…")).toBeInTheDocument();
+  expect(screen.queryByText("MR. X IS THINKING…")).toBeNull();
+  release();
+  expect(await screen.findByText("MR. X IS THINKING…")).toBeInTheDocument();
+  expect(screen.queryByText("CONFIRM IN YOUR WALLET…")).toBeNull();
+});
+
 test("sidak_hidden_when_window_closed", async () => {
   mockChain(appraisal({ priced_ms: Date.now() - 3600001 }));
   renderAt("/case/3");

@@ -8,6 +8,7 @@ import { awaitResult, findNewAppraisal, isAbort } from "../hooks/awaitResult";
 import { useNow } from "../hooks/useNow";
 import { useView } from "../hooks/useView";
 import { useStage } from "../scene/SceneCanvas";
+import { prefersReducedMotion } from "../scene/webgl";
 import { GhostButton, Meter, PageTitle } from "../ui/bits";
 import { ResultCard } from "../ui/ResultCard";
 import { txErrorMessage } from "../wallet/tx";
@@ -40,9 +41,14 @@ export default function Taksir() {
   const [since, setSince] = useState<number | null>(null);
   const now = useNow();
   const gutter = useRef<HTMLDivElement>(null);
+  const answer = useRef<HTMLDivElement>(null);
   const abort = useRef<AbortController | null>(null);
   // Leaving the page stops the polling, and the card stops "thinking".
   useEffect(() => () => abort.current?.abort(), []);
+  // The answer lands below the long form: bring it into view.
+  useEffect(() => {
+    if (result) answer.current?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center" });
+  }, [result]);
 
   const p = params.data;
   const limits = p ?? LIMITS;
@@ -193,7 +199,11 @@ export default function Taksir() {
         ) : null}
       </section>
 
-      {result ? <ResultCard a={result} /> : null}
+      {result ? (
+        <div ref={answer}>
+          <ResultCard a={result} />
+        </div>
+      ) : null}
     </main>
   );
 }

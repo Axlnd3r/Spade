@@ -125,3 +125,36 @@ Kedua run selesai dengan exit 0, dan I-2 terpenuhi di akhir masing-masing.
 
 - **Opsi B terbukti on-chain.** Penanda tangan yang sama menaksir data jebakan lalu menyidaknya sendiri. Setiap siklus seperti itu: fee −50 (dibakar), stake 25 kembali, reward +50. Untung bersihnya 0 TAKSIR, ditambah biaya sekitar 0,10 NEAR. Ini sesuai D-15: farming data sendiri tidak menguntungkan, sedangkan menangkap jebakan buatan orang lain tetap mendapat 50 TAKSIR.
 - **Refund `exec_deposit` dari `outlayer.testnet`** ke pengguna sebesar 0,005961–0,005989 NEAR per eksekusi, sama dengan v1.
+
+## Web (S5)
+
+Situs: https://axlnd3r.github.io/Spade/ (GitHub Pages, workflow `pages.yml`; build, 57 tes dan deploy lolos di GitHub pada commit `4756cbd`). Kontrak yang dipakai: `v2.spade-taksir.testnet`. RPC browser: `test.rpc.fastnear.com`, cadangan `archival-rpc.testnet.near.org`. Pustaka wallet: `@hot-labs/near-connect` 0.12.0.
+
+### Alur wallet di browser (2026-11-12, akun `spade-taksir.testnet`)
+
+**Yang diuji bukan wallet sungguhan.** Halaman uji (build yang sama, `localhost:4173`) diberi wallet tiruan lewat mekanisme `near-wallet-injected` milik NEAR Connector, sehingga popup pemilih wallet, `signIn`, `signAndSendTransaction`, dan kode situs berjalan seperti biasa. Wallet tiruan itu hanya menahan permintaan transaksi; penandatanganannya dilakukan `near-cli-rs` (legacy keychain) dengan skrip yang hanya menerima kontrak `v2`, tiga metode pengguna, gas 300 TGas, dan deposit ≤ 0,1 NEAR. Popup wallet sungguhan (Meteor, Intear, dll.) belum diuji.
+
+| Langkah | Transaksi | Hasil |
+|---|---|---|
+| Connect | — | akun tampil, saldo 350 TAKSIR terbaca dari chain |
+| TAKSIR data jebakan a02 + baris unik (#4) | `FLomTkzDCJwXT39LHRfKyZ1Kcc6vTFCKLoqWPip2HTbF` | `Priced` **1** (di S4 data yang sama menghasilkan 10000: jawaban AI bervariasi); kartu hasil tampil, saldo 350 → 300 |
+| SIDAK #4, urutan dibalik | `eqLC3fxi1wvQ1fW6ucbJCJTzTaG9y5EmG5Ppoa9sCDs` | `Survived` (1 vs 1, selisih 0,00%): pesan HELD, stake 25 terbakar, saldo 300 → 275 |
+
+Permintaan yang dikirim aplikasi diperiksa sebelum ditandatangani: penerima `v2.spade-taksir.testnet`, metode `appraise` / `challenge`, gas `300000000000000`, deposit `57100000000000000000000` (0,0571 NEAR), data persis sama dengan isi kolom. Biaya akun untuk dua transaksi: sekitar 0,105 NEAR.
+
+Jalur yang diuji tanpa mengirim transaksi: wallet menolak permintaan SIDAK → pesan "Cancelled in wallet.", tombol aktif lagi, kartu tidak tertahan di THINKING; sesi wallet pulih setelah halaman dimuat ulang.
+
+Jalur yang belum teruji di browser: BUSTED (kartu BUSTED hanya diuji dengan data kasus #1 dan #3 serta tes otomatis) dan faucet (akun uji sudah punya saldo).
+
+### Temuan dari uji ini (diperbaiki)
+
+- Kartu hasil TAKSIR muncul di bawah layar tanpa menggulir: sekarang halaman menggulir ke kartu itu.
+- Panel SIDAK menulis "MR. X IS THINKING…" saat masih menunggu konfirmasi wallet: sekarang "CONFIRM IN YOUR WALLET…" lebih dulu, seperti halaman TAKSIR.
+
+### NEAR Mobile
+
+Tidak ada di pemilih wallet: manifest NEAR Connector menandainya `testnet: false`, dan kode wallet-nya menolak testnet dengan `Network testnet is not supported by Near Mobile`. Memakainya butuh kontrak di mainnet.
+
+### Catatan angka
+
+`burned_total` naik dari 250 ke 42.210 TAKSIR setelah dua transaksi di atas (fee 50 dan stake 25). Sisanya dua entri `BurnEpoch` di buku besar: 41.585 untuk epoch 0–138, yang terbakar sekaligus ketika `appraise` menyentuh kontrak lagi setelah sehari menganggur, dan 299 untuk epoch 139. Ini sesuai rancangan ("budget yang tidak diklaim terbakar di tiap pergantian epoch", dihitung saat kontrak berikutnya disentuh), tetapi angka "BURNED" di situs melonjak setelah masa sepi.

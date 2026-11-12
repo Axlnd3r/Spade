@@ -30,6 +30,8 @@ export function SidakPanel({ a, p, now, onDone }: { a: Appraisal; p: Params; now
   const [order, setOrder] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [slow, setSlow] = useState(false);
+  /** Waiting for the wallet to confirm; Mr. X is not thinking until the transaction is sent. */
+  const [waiting, setWaiting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [bust, setBust] = useState<Challenge | null>(null);
   const abort = useRef<AbortController | null>(null);
@@ -52,6 +54,7 @@ export function SidakPanel({ a, p, now, onDone }: { a: Appraisal; p: Params; now
   async function submit() {
     if (!accountId || !order) return;
     setBusy(true);
+    setWaiting(true);
     setMessage(null);
     setSlow(false);
     trigger("thinking");
@@ -59,6 +62,7 @@ export function SidakPanel({ a, p, now, onDone }: { a: Appraisal; p: Params; now
     try {
       const before = (await view<Challenge[]>("get_challenges", { appraisal_id: a.id })).length;
       await call("challenge", { appraisal_id: a.id, variant: order.join("\n") }, deposit);
+      setWaiting(false);
       abort.current = new AbortController();
       const mine = (list: Challenge[]) => list.slice(before).find((c) => c.challenger === accountId);
       const done = await awaitResult<Challenge>(
@@ -82,6 +86,7 @@ export function SidakPanel({ a, p, now, onDone }: { a: Appraisal; p: Params; now
       if (!isAbort(e)) setMessage(txErrorMessage(e));
     } finally {
       setBusy(false);
+      setWaiting(false);
       setSlow(false);
       trigger(event);
     }
@@ -133,7 +138,11 @@ export function SidakPanel({ a, p, now, onDone }: { a: Appraisal; p: Params; now
             )}
             {busy ? (
               <span className="caption">
-                {slow ? "MR. X IS STILL THINKING. THIS PAGE UPDATES WHEN HE ANSWERS." : "MR. X IS THINKING…"}
+                {waiting
+                  ? "CONFIRM IN YOUR WALLET…"
+                  : slow
+                    ? "MR. X IS STILL THINKING. THIS PAGE UPDATES WHEN HE ANSWERS."
+                    : "MR. X IS THINKING…"}
               </span>
             ) : null}
           </div>
