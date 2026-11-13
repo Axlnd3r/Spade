@@ -88,28 +88,6 @@ const rise = (frame: number, fps: number, at: number) => ({
   }),
 });
 
-export const TitleCard: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  return (
-    <Backdrop>
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", textAlign: "center", gap: 34 }}>
-        <div style={rise(frame, fps, 0)}>
-          <SpadeMark size={96} />
-        </div>
-        <div style={{ ...rise(frame, fps, 0.25), fontSize: 26, letterSpacing: "0.3em", color: "rgba(255,255,255,0.65)" }}>
-          SPADE · $TAKSIR × SIDAK
-        </div>
-        <div style={{ ...rise(frame, fps, 0.5), fontSize: 92, fontWeight: 700, lineHeight: 1.05 }}>
-          RUG THE AI,
-          <br />
-          NOT THE HOLDERS.
-        </div>
-      </AbsoluteFill>
-    </Backdrop>
-  );
-};
-
 /** `node scripts/verify.mjs`, typed, then its real output (src/verifyOutput.ts) line by line. */
 export const Terminal: React.FC = () => {
   const frame = useCurrentFrame();
@@ -156,6 +134,77 @@ export const Terminal: React.FC = () => {
   );
 };
 
+/** The `near` command the wallet asked for and what the CLI printed, from the run that recorded wallet.mp4. */
+export const SignPanel: React.FC<{ command: string; output: readonly string[]; outputFrom: number }> = ({ command, output, outputFrom }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const lines = command.split("\n").map((l, i, all) => l.trim().replace(/\s*\\$/, "") + (i === all.length - 1 ? " send" : ""));
+  const shown = Math.max(0, Math.floor((frame - 0.2 * fps) / 2));
+  const clip = (l: string) => (l.length > 52 ? `${l.slice(0, 51)}…` : l);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: WINDOW.left + WINDOW.width - 560 - 22,
+        top: WINDOW.top + 22,
+        width: 560,
+        padding: "22px 24px",
+        boxSizing: "border-box",
+        backgroundColor: "rgba(8,8,8,0.95)",
+        outline: "1px solid rgba(255,255,255,0.3)",
+        fontFamily: MONO,
+        fontSize: 16,
+        lineHeight: 1.55,
+        opacity: interpolate(frame, [0, 0.3 * fps, durationInFrames - 0.3 * fps, durationInFrames], [0, 1, 1, 0], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        }),
+      }}
+    >
+      <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 14, letterSpacing: "0.14em", marginBottom: 10 }}>WALLET: NEAR CLI · YOUR TERMINAL</div>
+      {lines.slice(0, shown).map((l, i) => (
+        <div key={i} style={{ whiteSpace: "pre", paddingLeft: i ? 22 : 0 }}>
+          {i ? "" : <span style={{ color: "rgba(255,255,255,0.45)" }}>$ </span>}
+          {clip(l)}
+        </div>
+      ))}
+      {frame >= outputFrom
+        ? output.map((l) => (
+            <div key={l} style={{ color: /succeeded/.test(l) ? "#7dffa8" : "#fff", marginTop: 8, wordBreak: "break-all" }}>
+              {l}
+            </div>
+          ))
+        : null}
+    </div>
+  );
+};
+
+/** Marks a cut in a recording, so a skipped wait is never passed off as real time. */
+export const Jump: React.FC<{ text: string }> = ({ text }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: WINDOW.left + 22,
+        top: WINDOW.top + 22,
+        padding: "10px 16px",
+        backgroundColor: "#fff",
+        color: "#000",
+        fontSize: 20,
+        letterSpacing: "0.14em",
+        opacity: interpolate(frame, [0, 0.2 * fps, durationInFrames - 0.3 * fps, durationInFrames], [0, 1, 1, 0], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        }),
+      }}
+    >
+      {text}
+    </div>
+  );
+};
+
 export const EndCard: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -166,20 +215,24 @@ export const EndCard: React.FC = () => {
         <div style={rise(frame, fps, 0)}>
           <SpadeMark size={72} />
         </div>
-        <div style={{ ...rise(frame, fps, 0.2), fontSize: 76, fontWeight: 700 }}>SPADE</div>
-        <div style={{ ...rise(frame, fps, 0.4), ...line }}>
-          github.com/Axlnd3r/Spade
+        <div style={{ ...rise(frame, fps, 0.15), fontSize: 26, letterSpacing: "0.3em", color: "rgba(255,255,255,0.65)" }}>SPADE · $TAKSIR × SIDAK</div>
+        <div style={{ ...rise(frame, fps, 0.3), fontSize: 76, fontWeight: 700, lineHeight: 1.08 }}>
+          MR. X IS LIVE.
           <br />
-          axlnd3r.github.io/Spade
+          COME BUST HIM.
         </div>
-        <div style={{ ...rise(frame, fps, 0.7), fontSize: 26, letterSpacing: "0.16em", color: "rgba(255,255,255,0.65)" }}>
+        <div style={{ ...rise(frame, fps, 0.6), ...line }}>
+          axlnd3r.github.io/Spade
+          <br />
+          github.com/Axlnd3r/Spade
+        </div>
+        <div style={{ ...rise(frame, fps, 0.9), fontSize: 26, letterSpacing: "0.16em", color: "rgba(255,255,255,0.65)" }}>
           BUILT FOR THE NEAR HACKATHON 2026 · #NEARHACKATHON
         </div>
-        <div style={{ ...rise(frame, fps, 0.9), fontSize: 22, color: "rgba(255,255,255,0.5)" }}>
+        <div style={{ ...rise(frame, fps, 1.1), fontSize: 22, color: "rgba(255,255,255,0.5)" }}>
           NEAR testnet demo. Not audited.
         </div>
       </AbsoluteFill>
     </Backdrop>
   );
 };
-

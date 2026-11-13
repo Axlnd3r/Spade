@@ -1,12 +1,18 @@
 // What each recorded shot does on the live site. `path` is the hash route loaded first, `prepare` runs
 // before recording starts, `act` is what the camera sees.
 
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+export const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let pointer = { x: 960, y: 540 };
 
+/** Moves the pointer without animation, before recording starts. */
+export async function place(page, x, y) {
+  pointer = { x, y };
+  await page.mouse.move(x, y);
+}
+
 /** Moves the pointer (the site draws it as a glass lens) along an eased path. */
-async function glide(page, x, y, ms = 900) {
+export async function glide(page, x, y, ms = 900) {
   const from = pointer;
   const steps = Math.max(2, Math.round(ms / 16));
   for (let i = 1; i <= steps; i++) {
@@ -19,7 +25,7 @@ async function glide(page, x, y, ms = 900) {
 }
 
 /** Scrolls by `dy` pixels with an eased curve over `ms`. */
-async function scroll(page, dy, ms = 1500) {
+export async function scroll(page, dy, ms = 1500) {
   const start = await page.evaluate(() => window.scrollY);
   const steps = Math.round(ms / 16);
   for (let i = 1; i <= steps; i++) {
@@ -30,25 +36,25 @@ async function scroll(page, dy, ms = 1500) {
   }
 }
 
-async function box(page, selector) {
+export async function box(page, selector) {
   const el = await page.waitForSelector(selector, { visible: true });
   const b = await el.boundingBox();
   return { ...b, cx: b.x + b.width / 2, cy: b.y + b.height / 2 };
 }
 
 /** Puts `selector` at `top` pixels from the top of the viewport, without animation. */
-async function jumpTo(page, selector, top = 140) {
+export async function jumpTo(page, selector, top = 140) {
   await page.$eval(selector, (el, t) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - t), top);
 }
 
-async function click(page, selector, ms = 700) {
+export async function click(page, selector, ms = 700) {
   const b = await box(page, selector);
   await glide(page, b.cx, b.cy, ms);
   await wait(150);
   await page.mouse.click(b.cx, b.cy);
 }
 
-async function clickText(page, tag, text, ms = 700) {
+export async function clickText(page, tag, text, ms = 700) {
   const el = await page.waitForSelector(`::-p-xpath(//${tag}[normalize-space(.)='${text}'])`, { visible: true });
   const b = await el.boundingBox();
   await glide(page, b.x + b.width / 2, b.y + b.height / 2, ms);
@@ -98,32 +104,6 @@ export const SHOTS = {
       await page.mouse.up();
       await glide(page, at(1800) + 120, s.cy + 140, 900);
       await wait(1200);
-    },
-  },
-
-  // TAKSIR without a wallet: type a list and watch the meters and the receipt. Stand-in for the wallet clip.
-  taksir: {
-    path: "/taksir",
-    prepare: async (page) => {
-      await jumpTo(page, "#form-title", 200);
-      pointer = { x: 1500, y: 900 };
-      await page.mouse.move(pointer.x, pointer.y);
-    },
-    act: async (page) => {
-      await wait(1000);
-      await click(page, ".data-input", 900);
-      await page.keyboard.down("Control");
-      await page.keyboard.press("a");
-      await page.keyboard.up("Control");
-      await page.keyboard.press("Backspace");
-      await wait(400);
-      await page.keyboard.type(
-        "Warung Bu Sri price list\nnasi goreng 25000\nmie ayam 18000\nes teh manis 5000\nsate ayam 10 tusuk 30000\nkerupuk 2000",
-        { delay: 35 },
-      );
-      await wait(800);
-      await glide(page, 1500, 760, 1200);
-      await wait(1800);
     },
   },
 

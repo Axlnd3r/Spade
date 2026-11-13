@@ -2,13 +2,26 @@
 
 Built for the NEAR HACKATHON 2026, track **Memecoins With Mechanics**. Testnet only.
 
+> **Most memecoins rug their holders. In Spade, the holders rug the AI.**
+
+Mr. X is an AI appraiser sealed inside a TEE. Show him any list and he puts a price on it, signed and stored on-chain. Think he is bluffing? Show him the same lines again in a different order. If his price jumps, he is **BUSTED** and the treasury he guards pays you. If he holds steady, your stake burns. That is the whole coin: a bounty for catching an AI contradicting itself, paid in the coin and provable on-chain.
+
+Why it belongs in *Memecoins With Mechanics*:
+
+- **The mechanic is the meme.** "Rug the AI" is not a slogan on top of a token. Pricing (TAKSIR) and the spot check (SIDAK) are the only two things the token does, and both are contract methods.
+- **Playing it makes it scarcer.** There is no mint function. Every priced appraisal burns its 50 TAKSIR fee, every challenge that misses burns its 25 TAKSIR stake, and reward budget that nobody claims is burned too.
+- **You do not have to take our word for it.** The AI runs in a TEE from code pinned by hash, every answer carries the model's signature, and `node scripts/verify.mjs` checks the live contract against the recorded deployment. What is still open is listed under [Limits](#5-limits), starting with the deploy key counted in the table below.
+- **It is AI red-teaming as a game.** Case #3 on testnet, planted by our own end-to-end test, is a prompt injection hidden in a list: Mr. X said 10,000, then 1 for the same lines reversed, and the catch is on-chain.
+
+The same thing in exact terms:
+
 TAKSIR is a NEP-141 token whose rules live in one NEAR contract. Anyone can pay 50 TAKSIR (burned) to have an AI appraiser ("Mr. X") put a price from 1 to 10,000 on a list of text lines. The AI runs inside a TEE from code whose hash is pinned in the contract, and every answer is stored on-chain with the model's signature. SIDAK is a spot check on that appraiser: a holder stakes 25 TAKSIR and sends the **same lines in a different order**. The order changes nothing, so the second price should match the first. If the two prices are more than 75% apart, the appraiser is "caught": the challenger gets the stake back plus 50 TAKSIR from the contract's treasury. If they are close, the stake is burned. There is no mint function, so the supply can only fall: fees, lost stakes and unclaimed reward budget are all burned.
 
 | | |
 |---|---|
 | Live demo | https://axlnd3r.github.io/Spade/ |
 | Repository | https://github.com/Axlnd3r/Spade (MIT, see `LICENSE`) |
-| Demo video | About 88 s, captions only; script, scenes and how it is rebuilt in `docs/DEMO.md` (source in `video/`) |
+| Demo video | About 2 min 10 s: a 21-second animated opening on what gets rugged, then the live site, including a real TAKSIR and SIDAK signed with a wallet on testnet. Music in the background; the captions carry everything. Script, scenes and how it is rebuilt in `docs/DEMO.md` (source in `video/`) |
 | Threat model | `docs/THREAT_MODEL.md`: prompt injection, farming, noise, outages, leaked keys, collusion, front end |
 | Contract (testnet) | `v2.spade-taksir.testnet` |
 | Contract code SHA-256 | `a8b90d5a9d54ce1fb9085ee0e2980780acd8c8f4431d5ae2f92b5b7c0b6b0127` |
@@ -259,7 +272,7 @@ bash scripts/deploy.sh 3                                        # new contract v
 node scripts/e2e.mjs v2.spade-taksir.testnet <your-account>     # faucet, appraise, challenge, twice, then the supply invariant
 ```
 
-After a deploy, the OutLayer secret must be set again with the new contract in the whitelist (command in `scripts/README.md`). Never commit the NEAR AI key; `.env` is git-ignored.
+After a deploy, the OutLayer secret must be set again so that only calls coming through the new contract can read it, from any signer (command in `scripts/README.md`). Never commit the NEAR AI key; `.env` is git-ignored.
 
 Repository layout:
 
@@ -272,7 +285,7 @@ Repository layout:
 | `sim` | the 60-day model and its tests |
 | `web` | the static site (Vite, React, TypeScript, three.js) deployed to GitHub Pages by `.github/workflows/pages.yml` |
 | `scripts` | deploy, end-to-end and read-only `verify.mjs` scripts |
-| `video` | the demo video: Remotion composition and the headless-Chrome recorder of the live site (`docs/DEMO.md`) |
+| `video` | the demo video: Remotion composition (animated opening, captions), the headless-Chrome recorder of the live site, the wallet-clip recorder and the sound-effect synthesizer (`docs/DEMO.md`) |
 | `docs` | `DECISIONS.md` (every deviation from the blueprint), `THREAT_MODEL.md`, `DEMO.md`, `EXPERIMENT.md`, `TESTNET.md`, `WORKLOG.md`, `BLUEPRINT.md` (the original build spec, in Indonesian), `sim/`, `superpowers/` (plans and specs) |
 
 ---
@@ -300,6 +313,6 @@ Repository layout:
 - **Hackathon rule on prior code:** this project has no code from before the hackathon. The first commit is `2635fcc` on 2026-11-10 (`git log --reverse`); every file here was written after the 2026-10-19 announcement.
 - **AI tools used to build it:** Claude Code (Anthropic). The models named in the `Co-Authored-By` trailers of the commits are Claude Opus 5.5 (most commits) and Claude Sonnet 5.5; a few commits carry a plain "Claude". The agent worked from the plans and specs in `docs/superpowers/` (the Superpowers plugin workflow) and from the blueprint in `docs/BLUEPRINT.md`. Every decision that changed the product was made by the human author at the checkpoints recorded in `docs/WORKLOG.md` and `docs/DECISIONS.md`.
 - **What the human author did by hand:** provided the NEAR AI key and the OutLayer secret, funded the testnet account, chose the model's threshold and the final parameters (checkpoints 1 and 4), picked the product direction, supplied the card engravings (`web/src/scene/mrx-*.png`) and the style reference `DESIGN_OHZI.md`, and owns the demo post and the submission. The card back is an original SVG (`web/src/scene/cardArt.ts`).
-- **The demo video** was assembled by the agent: the site scenes are headless-Chrome recordings of the live site, the terminal scene shows the real output of `scripts/verify.mjs`, and the captions are text (`docs/DEMO.md`).
+- **The demo video** was assembled by the agent: the site scenes are headless-Chrome recordings of the live site; the TAKSIR and SIDAK scenes are real testnet transactions from a fresh account, signed through the site's NEAR CLI wallet (waits cut and labelled); the terminal scene shows the real output of `scripts/verify.mjs`, and the captions are text (`docs/DEMO.md`). The opening is animated in Remotion with the site's own card art; its figures (10,000 → 1, +50) are case #3. The background music was generated with Higgsfield's Sonilo Music model from a text prompt (in `docs/DEMO.md`; the file is not in the repository), and the sound effects are synthesized by `video/capture/sfx.mjs`.
 - **At runtime the product uses AI** only inside the enclave: one call to the model above per appraisal or challenge.
 - **No secret has been committed.** `.env` is ignored; the NEAR AI key lives only in an OutLayer secret bound to the enclave hash.

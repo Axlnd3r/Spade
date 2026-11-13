@@ -5,15 +5,16 @@
 //   node capture/record.mjs [shot ...]     # no argument records every shot
 import { spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
 import { SHOTS } from "./shots.mjs";
 
-const CHROME = process.env.CHROME ?? "C:/Program Files/Google/Chrome/Application/chrome.exe";
+export const CHROME = process.env.CHROME ?? "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const FFMPEG = new URL("../node_modules/@remotion/compositor-win32-x64-msvc/ffmpeg.exe", import.meta.url);
-const OUT = new URL("../public/footage/", import.meta.url);
+export const OUT = new URL("../public/footage/", import.meta.url);
 const FPS = 30;
 
-async function encode(frames, file) {
+export async function encode(frames, file) {
   const ff = spawn(
     FFMPEG.pathname.slice(1),
     ["-y", "-loglevel", "error", "-f", "image2pipe", "-c:v", "mjpeg", "-framerate", `${FPS}`, "-i", "-",
@@ -40,15 +41,9 @@ async function recordShot(browser, name, shot) {
   await shot.prepare?.(page);
   await new Promise((r) => setTimeout(r, 2500));
 
-  const cdp = await page.createCDPSession();
-  const frames = [];
-  cdp.on("Page.screencastFrame", ({ data, metadata, sessionId }) => {
-    frames.push({ data: Buffer.from(data, "base64"), t: metadata.timestamp });
-    cdp.send("Page.screencastFrameAck", { sessionId }).catch(() => {});
-  });
-  await cdp.send("Page.startScreencast", { format: "jpeg", quality: 95, maxWidth: 1920, maxHeight: 1080 });
+  const stop = await startCapture(page);
   await shot.act(page);
-  await cdp.send("Page.stopScreencast");
+  const frames = await stop();
   await page.close();
 
   const file = new URL(`${name}.mp4`, OUT).pathname.slice(1);
@@ -56,19 +51,42 @@ async function recordShot(browser, name, shot) {
   console.log(`${name}: ${r.seconds.toFixed(1)} s, ${r.captured} frames captured (${(r.captured / r.seconds).toFixed(1)}/s), ${r.written} written`);
 }
 
-mkdirSync(OUT, { recursive: true });
-const names = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(SHOTS);
-const browser = await puppeteer.launch({
-  executablePath: CHROME,
-  headless: true,
-  defaultViewport: { width: 1920, height: 1080 },
-  args: ["--use-angle=d3d11", "--enable-gpu", "--ignore-gpu-blocklist", "--window-size=1920,1080", "--hide-scrollbars"],
-});
-try {
-  for (const name of names) {
-    if (!SHOTS[name]) throw new Error(`unknown shot ${name}; known: ${Object.keys(SHOTS).join(", ")}`);
-    await recordShot(browser, name, SHOTS[name]);
+/** Headless Chrome with WebGL on the GPU, a 1920×1080 viewport and no scrollbars. */
+export function launch(extra = {}) {
+  return puppeteer.launch({
+    executablePath: CHROME,
+    headless: true,
+    defaultViewport: { width: 1920, height: 1080 },
+    args: ["--use-angle=d3d11", "--enable-gpu", "--ignore-gpu-blocklist", "--window-size=1920,1080", "--hide-scrollbars"],
+    ...extra,
+  });
+}
+
+/** Starts the CDP screencast on `page`; the returned function stops it and gives the frames. */
+export async function startCapture(page) {
+  const cdp = await page.createCDPSession();
+  const frames = [];
+  cdp.on("Page.screencastFrame", ({ data, metadata, sessionId }) => {
+    frames.push({ data: Buffer.from(data, "base64"), t: metadata.timestamp });
+    cdp.send("Page.screencastFrameAck", { sessionId }).catch(() => {});
+  });
+  await cdp.send("Page.startScreencast", { format: "jpeg", quality: 95, maxWidth: 1920, maxHeight: 1080 });
+  return async () => {
+    await cdp.send("Page.stopScreencast");
+    return frames;
+  };
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  mkdirSync(OUT, { recursive: true });
+  const names = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(SHOTS);
+  const browser = await launch();
+  try {
+    for (const name of names) {
+      if (!SHOTS[name]) throw new Error(`unknown shot ${name}; known: ${Object.keys(SHOTS).join(", ")}`);
+      await recordShot(browser, name, SHOTS[name]);
+    }
+  } finally {
+    await browser.close();
   }
-} finally {
-  await browser.close();
 }

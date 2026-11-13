@@ -9,3 +9,7 @@ out
 # Re-recordable footage and the wallet clip (docs/DEMO.md)
 public/footage
 public/*.mp4
+
+# The generated music track and the synthesized effects (docs/DEMO.md)
+public/music.m4a
+public/sfx
