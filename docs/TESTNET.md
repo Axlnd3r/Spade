@@ -67,6 +67,8 @@ Access key akun kontrak **belum dihapus**. Penghapusan key (T-3) adalah langkah 
 
 Manusia memasang ulang profil `taksir` dengan opsi `--access whitelist:v1.spade-taksir.testnet,spade-taksir.testnet --direct`. Dengan `--direct`, whitelist menilai akun yang memanggil `outlayer.testnet`, yaitu kontrak. Kedua run e2e di bawah membuktikan kontrak bisa membaca secret ini.
 
+> **Koreksi 2026-11-13:** kalimat di atas hanya separuh benar. Aturan yang tersimpan adalah `And(Whitelist[…], Predecessor(Whitelist[…]))`, dan `Whitelist` di luar menilai penanda tangan. Karena semua e2e ditandatangani `spade-taksir.testnet`, pengguna lain tidak pernah diuji. Lihat "Akses secret untuk semua pengguna" di bawah.
+
 ### E2E `node scripts/e2e.mjs v1.spade-taksir.testnet` (2026-11-11, penanda tangan `spade-taksir.testnet`)
 
 Kedua run selesai dengan exit 0. Run 2 melewati faucet karena saldo sudah ada, dan memakai data baru.
@@ -158,3 +160,21 @@ Tidak ada di pemilih wallet: manifest NEAR Connector menandainya `testnet: false
 ### Catatan angka
 
 `burned_total` naik dari 250 ke 42.210 TAKSIR setelah dua transaksi di atas (fee 50 dan stake 25). Sisanya dua entri `BurnEpoch` di buku besar: 41.585 untuk epoch 0–138, yang terbakar sekaligus ketika `appraise` menyentuh kontrak lagi setelah sehari menganggur, dan 299 untuk epoch 139. Ini sesuai rancangan ("budget yang tidak diklaim terbakar di tiap pergantian epoch", dihitung saat kontrak berikutnya disentuh), tetapi angka "BURNED" di situs melonjak setelah masa sepi.
+
+### Akses secret untuk semua pengguna (2026-11-13)
+
+**Temuan.** Appraisal pertama dari akun selain penulis (`spade-demo.testnet`, kasus #5, tx `2Sz6e3Jw6mKQnvJWbWpAQKqacWhgVwxVTvVRjugccShV`) berakhir `Failed`. OutLayer menulis: *Access denied by access condition — signer spade-demo.testnet, called from v2.spade-taksir.testnet.* Fee 50 TAKSIR kembali, sesuai jalur `Failed`.
+
+**Penyebab.** Aturan yang tersimpan (`list_user_secrets`) adalah `And(Whitelist[v2.spade-taksir.testnet, spade-taksir.testnet], Predecessor(Whitelist[v2.spade-taksir.testnet, spade-taksir.testnet]))`. `Whitelist` di luar dinilai terhadap penanda tangan, jadi hanya akun penulis yang lolos. Semua e2e sebelumnya ditandatangani `spade-taksir.testnet`, sehingga masalah ini tidak terlihat. Akibatnya, sejak `v2` di-deploy sampai perbaikan ini, situs live hanya berfungsi untuk akun penulis.
+
+**Perbaikan** (disetujui manusia): `update_access` di `outlayer.testnet` dari `spade-taksir.testnet`, tx `7XRrLG6zb84mRgfZSrn6MHHuHS5znUW5bPqHThWsS6zB`. Aturan baru: `Predecessor(Whitelist[v2.spade-taksir.testnet])`. Siapa pun boleh menandatangani, asalkan `outlayer.testnet` dipanggil oleh kontrak. Panggilan langsung ke OutLayer tetap ditolak. API key tidak dikirim ulang (ciphertext tetap).
+
+**Bukti.** Run berikutnya dari `spade-demo.testnet` lewat situs, dengan wallet NEAR CLI:
+
+| Langkah | Transaksi | Hasil |
+|---|---|---|
+| Faucet | `BktnWvGD9EX1WR9QZu3NqKVDhpfLhkTKmn3SsxRfx8iG` | 500 TAKSIR |
+| TAKSIR (#6) | `Cr6KzPFY9oJSarDe89jxe9SDTUyDfHAArDoB2o4WQCRm` | `Priced` **2500** |
+| SIDAK #6, urutan dibalik | `51MfuLLPnUCWa1H4Uanyp5Br25qxPfvHxi2DsVDG6itg` | `Survived` (1500, selisih 40%): HELD, stake 25 terbakar |
+
+Ini juga uji pertama wallet yang tersedia di pemilih wallet situs (NEAR CLI, bukan wallet tiruan). Alurnya: pilih akun, pilih keychain, lalu untuk tiap transaksi jalankan perintah yang ditampilkan dan tempelkan hash-nya. Satu catatan: perintah dari situs tidak diakhiri `send`, sehingga CLI menanyakan langkah terakhir secara interaktif. Waktu tunggu `near` CLI (110 dan 89 detik) mencakup jawaban enclave, karena CLI menunggu semua receipt selesai.

@@ -15,11 +15,13 @@ bash scripts/deploy.sh 1   # Git Bash di Windows
 
 Jika `vN` sudah berisi kontrak, skrip berhenti dan meminta `N` berikutnya, karena parameter tidak bisa diubah. Skrip ini **tidak** menghapus access key.
 
-Setelah deploy, manusia memasang ulang secret OutLayer dengan whitelist akun kontrak:
+Setelah deploy (atau saat mengganti API key NEAR AI), manusia memasang ulang secret OutLayer. Aturannya: siapa pun boleh, asal OutLayer dipanggil oleh kontrak `vN` (`Predecessor(Whitelist[vN])`):
 
 ```bash
- outlayer secrets set '{"NEAR_AI_API_KEY":"…"}' --wasm-hash 0206187e1ba0c53acb5c5e991b1d559c20eafb01d617a387be5a0848c7348ee2 --profile taksir --access whitelist:vN.spade-taksir.testnet,spade-taksir.testnet --direct
+ outlayer secrets set '{"NEAR_AI_API_KEY":"…"}' --wasm-hash 0206187e1ba0c53acb5c5e991b1d559c20eafb01d617a387be5a0848c7348ee2 --profile taksir --access allow-all --via vN.spade-taksir.testnet
 ```
+
+Jangan pakai `--access whitelist:… --direct`: opsi itu menyimpan `And(Whitelist[…], Predecessor(Whitelist[…]))`, dan bagian pertama dinilai terhadap **penanda tangan**, sehingga semua pengguna selain akun di whitelist mendapat `Failed` (temuan 2026-11-13, `docs/TESTNET.md`). Untuk mengganti aturan tanpa memasukkan ulang key: `outlayer secrets access --wasm-hash 0206187e… --profile taksir --access allow-all --via vN.spade-taksir.testnet`.
 
 ## `e2e.mjs`: alur penuh di testnet
 
