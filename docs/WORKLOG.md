@@ -67,3 +67,9 @@
 - **Alur wallet diuji di browser** oleh agen dengan wallet tiruan lewat NEAR Connect dan penandatanganan near-cli (`docs/TESTNET.md`, bagian Web): kasus #4 (Priced 1) dan sidak #4 (Survived). Dua bug UX ditemukan dan diperbaiki. Popup wallet sungguhan belum diuji.
 - **S6 dimulai:** `README.md` publik ditulis (blueprint dipindah ke `docs/BLUEPRINT.md`). Saat menulisnya ditemukan bahwa halaman Verify melebih-lebihkan peran enclave pada tanda tangan NEAR AI; teksnya diperbaiki. Masih kosong: `docs/THREAT_MODEL.md`, `scripts/verify.mjs`, `docs/DEMO.md`.
 - **Langkah manusia yang tersisa:** mencoba wallet sungguhan, menyetujui penghapusan semua access key kontrak (final lock), merekam video, memposting di X (H-6), dan mengirim submission (H-7). Setelah final lock, baris "Access keys" di README harus diperbarui.
+
+## 2026-11-13
+
+- **`scripts/verify.mjs`** (baca-saja): code hash, parameter, hash dan URL enclave, unduhan rilis, satu mint genesis, supply + burned = genesis, burn di buku besar = `burned_total`, dan I-2, semuanya dibaca di satu blok final. Lolos di `v2`; access key tampil WARN sampai final lock. Masuk quickstart README.
+- **`docs/THREAT_MODEL.md`**: prompt injection, farming, noise, enclave mati, kunci bocor (API key, access key kontrak, akun induk sebagai pemilik secret), kolusi, penyalahgunaan kontrak, front end. Klaim dicek ke kode (`parse_output` mengikat `h`, transfer ke kontrak ditolak, `storage_unregister` dimatikan).
+- **Video demo** (manusia memilih: hybrid, caption saja): proyek Remotion di `video/`. Adegan situs direkam otomatis dari situs live dengan Chrome headless (frame CDP, di-encode dengan ffmpeg bawaan Remotion), terminal memakai output asli `verify.mjs`. Draf 88 detik dirender. Adegan 3 masih memakai rekaman TAKSIR tanpa wallet sampai manusia merekam klip wallet sungguhan (`docs/DEMO.md`).

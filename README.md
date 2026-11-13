@@ -8,6 +8,8 @@ TAKSIR is a NEP-141 token whose rules live in one NEAR contract. Anyone can pay 
 |---|---|
 | Live demo | https://axlnd3r.github.io/Spade/ |
 | Repository | https://github.com/Axlnd3r/Spade (MIT, see `LICENSE`) |
+| Demo video | About 88 s, captions only; script, scenes and how it is rebuilt in `docs/DEMO.md` (source in `video/`) |
+| Threat model | `docs/THREAT_MODEL.md`: prompt injection, farming, noise, outages, leaked keys, collusion, front end |
 | Contract (testnet) | `v2.spade-taksir.testnet` |
 | Contract code SHA-256 | `a8b90d5a9d54ce1fb9085ee0e2980780acd8c8f4431d5ae2f92b5b7c0b6b0127` |
 | Pinned enclave SHA-256 | `0206187e1ba0c53acb5c5e991b1d559c20eafb01d617a387be5a0848c7348ee2` |
@@ -180,6 +182,8 @@ Charts (24-hour epochs):
 
 ## 5. Limits
 
+Each attack, what stops it and what is left is in `docs/THREAT_MODEL.md`. The short list:
+
 - **Testnet only, not audited.** The coin has no cash value. The faucet can be claimed by any number of accounts.
 - **The price is not used for trade yet.** In this version the price is a claim that can be audited. A data market and payments (for example over x402) are roadmap items and are not implemented.
 - **The order test is one kind of test.** The enclave deliberately does not sort the lines, because the measured quantity is the model's stability under changes that should not matter. Other equivalence tests are roadmap items.
@@ -267,8 +271,9 @@ Repository layout:
 | `spike` | the consistency experiment and the shared data-rule test vectors |
 | `sim` | the 60-day model and its tests |
 | `web` | the static site (Vite, React, TypeScript, three.js) deployed to GitHub Pages by `.github/workflows/pages.yml` |
-| `scripts` | deploy and end-to-end scripts |
-| `docs` | `DECISIONS.md` (every deviation from the blueprint), `EXPERIMENT.md`, `TESTNET.md`, `WORKLOG.md`, `BLUEPRINT.md` (the original build spec, in Indonesian), `sim/`, `superpowers/` (plans and specs) |
+| `scripts` | deploy, end-to-end and read-only `verify.mjs` scripts |
+| `video` | the demo video: Remotion composition and the headless-Chrome recorder of the live site (`docs/DEMO.md`) |
+| `docs` | `DECISIONS.md` (every deviation from the blueprint), `THREAT_MODEL.md`, `DEMO.md`, `EXPERIMENT.md`, `TESTNET.md`, `WORKLOG.md`, `BLUEPRINT.md` (the original build spec, in Indonesian), `sim/`, `superpowers/` (plans and specs) |
 
 ---
 
@@ -284,6 +289,8 @@ Repository layout:
 
 **Experiment and simulation.** Node built-ins only (`spike`), Python standard library only (`sim`).
 
+**Video.** Remotion 4.0.543 (`@remotion/cli`, `@remotion/media`, `@remotion/transitions`, `@remotion/google-fonts`; free for individuals and teams of up to 3 under the Remotion license), `puppeteer-core` 24 driving the installed Chrome to record the live site. Scaffolded with `npx create-video --blank`.
+
 **Templates and references.** The official `cargo near new` template (cargo-near 0.23) was the reference for the sandbox test setup (`docs/DECISIONS.md` D-11). OutLayer's build script and documentation were the reference for the enclave. The site's visual direction was inspired by ohzi.io; no code or assets were taken from it.
 
 ---
@@ -293,5 +300,6 @@ Repository layout:
 - **Hackathon rule on prior code:** this project has no code from before the hackathon. The first commit is `2635fcc` on 2026-11-10 (`git log --reverse`); every file here was written after the 2026-10-19 announcement.
 - **AI tools used to build it:** Claude Code (Anthropic). The models named in the `Co-Authored-By` trailers of the commits are Claude Opus 5.5 (most commits) and Claude Sonnet 5.5; a few commits carry a plain "Claude". The agent worked from the plans and specs in `docs/superpowers/` (the Superpowers plugin workflow) and from the blueprint in `docs/BLUEPRINT.md`. Every decision that changed the product was made by the human author at the checkpoints recorded in `docs/WORKLOG.md` and `docs/DECISIONS.md`.
 - **What the human author did by hand:** provided the NEAR AI key and the OutLayer secret, funded the testnet account, chose the model's threshold and the final parameters (checkpoints 1 and 4), picked the product direction, supplied the card engravings (`web/src/scene/mrx-*.png`) and the style reference `DESIGN_OHZI.md`, and owns the demo post and the submission. The card back is an original SVG (`web/src/scene/cardArt.ts`).
+- **The demo video** was assembled by the agent: the site scenes are headless-Chrome recordings of the live site, the terminal scene shows the real output of `scripts/verify.mjs`, and the captions are text (`docs/DEMO.md`).
 - **At runtime the product uses AI** only inside the enclave: one call to the model above per appraisal or challenge.
 - **No secret has been committed.** `.env` is ignored; the NEAR AI key lives only in an OutLayer secret bound to the enclave hash.
