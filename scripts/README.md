@@ -29,6 +29,23 @@ node scripts/e2e.mjs v1.spade-taksir.testnet
 
 Penanda tangannya `spade-taksir.testnet`. Alurnya: faucet (hanya kalau saldo 0) → taksir → sidak → taksir data jahil → sidak → stats, log, dan pengecekan I-2. Skrip ini aman dijalankan berulang kali karena setiap run memakai data baru.
 
+## `verify.mjs`: cek kontrak live, baca-saja
+
+```bash
+node scripts/verify.mjs                       # v2.spade-taksir.testnet
+node scripts/verify.mjs v1.spade-taksir.testnet --offline --require-locked
+```
+
+Tidak butuh key dan tidak mengirim transaksi. Semua data dibaca di satu blok final. Yang diperiksa:
+
+- `code_hash` sama dengan sha256 `taksir.wasm` di bagian `### Deploy` kontrak itu di `docs/TESTNET.md`;
+- `get_params` sama dengan `params.testnet.json`;
+- `wasm_hash` dan `wasm_url` sama dengan rilis enclave, dan sha256 `appraiser.wasm` hasil unduhan sama dengan `wasm_hash` (`--offline` melewati unduhan);
+- buku besar punya tepat satu `Mint` (genesis), supply + burned = genesis, dan jumlah burn di buku besar sama dengan `burned_total`;
+- I-2: saldo kontrak = treasury + faucet pool + escrow.
+
+Jumlah access key yang belum nol dicetak sebagai WARN, atau FAIL kalau memakai `--require-locked`. Exit 0 berarti semua lolos, exit 1 berarti ada yang tidak cocok, dan exit 2 berarti skrip tidak bisa berjalan (misalnya kontraknya tidak tercatat di `docs/TESTNET.md`). Tesnya: `node --test scripts/verify.test.mjs scripts/lib/near.test.mjs`.
+
 ## `params.testnet.json`
 
 Argumen `new`, dengan nilai dalam yocto atau string (D-15). Kunci-kuncinya harus sama persis dengan field `pub` di `contracts/taksir/src/params.rs`.

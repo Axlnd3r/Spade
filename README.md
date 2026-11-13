@@ -34,7 +34,15 @@ Contents: [Judge quickstart](#1-judge-quickstart) Â· [Mechanics](#2-mechanics) Â
 
 ### Command line (no wallet, no browser)
 
-Needs [near-cli-rs](https://github.com/near/near-cli-rs) (tested with 0.30.1).
+One command checks the live contract against this repository (Node 18 or later, no install, no key, sends no transaction):
+
+```bash
+node scripts/verify.mjs            # add --require-locked to fail while the contract still has access keys
+```
+
+It reads everything at one final block and prints PASS or FAIL for each check: the deployed code hash equals the `taksir.wasm` SHA-256 in `docs/TESTNET.md`; `get_params` equals `scripts/params.testnet.json`; the pinned enclave hash and URL equal the release, and the downloaded `appraiser.wasm` hashes to it; the ledger has exactly one mint (genesis) and supply + burned = 100,000,000; the burns in the ledger add up to `burned_total`; and the contract's balance equals treasury + faucet pool + escrow. The access-key count is a WARN until the final lock. Exit code 0 means every check passed.
+
+The same facts by hand, with [near-cli-rs](https://github.com/near/near-cli-rs) (tested with 0.30.1).
 
 ```bash
 # Parameters, fixed at launch (there are no setters)
@@ -116,7 +124,7 @@ Read them any time with `get_params`. They were chosen in `docs/DECISIONS.md` D-
 
 ## 3. Trust chain and how to check it
 
-1. **The contract runs every rule that moves money.** Check: `view-account-summary` shows the code SHA-256 from the top table (the web Verify page compares it live); `list-keys` shows the key count; `get_params` shows the values above.
+1. **The contract runs every rule that moves money.** Check: `view-account-summary` shows the code SHA-256 from the top table (the web Verify page compares it live); `list-keys` shows the key count; `get_params` shows the values above. `node scripts/verify.mjs` runs all three checks.
 2. **OutLayer only runs the WASM whose SHA-256 the contract pinned.** Check: `get_params` gives `wasm_url` and `wasm_hash`; `curl -sL <wasm_url> | sha256sum` must print that hash. The enclave also builds reproducibly: run `scripts/build_github_wasm.sh --dir enclave/appraiser --target wasm32-wasip2 --twice --keep` from the [OutLayer repository](https://github.com/out-layer/outlayer) at commit `3fb03a9e` (Docker, compiler image pinned by digest in `docs/TESTNET.md`); both builds produced the same bytes and the hash above.
 3. **Intel TDX attests that the code ran with that input and produced that output.** Check: the OutLayer dashboard shows an attestation for each execution (MRTD and RTMR0 to 3, `wasm_hash`, `input_hash`, `output_hash`, the TDX quote and a link to the transaction). This repository does not verify the quote itself.
 4. **NEAR AI Cloud runs the model in a TEE and signs each response.** Check: every appraisal and challenge stores `model`, `chat_id`, `signing_address`, `signature` and `response_hash`. The signed text is `MODEL:sha256(request body):response_hash`. Recompute the request hash from `enclave/appraiser/prompt.txt` and the data (see `src/request.rs`), recover the signer from `signature` (EIP-191), and compare it with `signing_address` and with the model attestation. The enclave **keeps** `signing_address` and `signature` only when the signed text matches this exact request and reply (`docs/DECISIONS.md` D-13); it does not itself verify the ECDSA signature, and no script in this repository does yet.
@@ -230,6 +238,7 @@ The author works on Windows 11 with WSL2 (Ubuntu 24.04). Versions in use: Rust 1
 | Mock OutLayer | `cd contracts/mock-outlayer && cargo test` | 3 |
 | Enclave | `cd enclave/appraiser && cargo test` | 32 |
 | Consistency experiment code | `cd spike && node --test` | 50 |
+| Script helpers and `verify.mjs` | `node --test scripts/verify.test.mjs scripts/lib/near.test.mjs` | 11 |
 | Simulation | `python -m unittest sim/test_model.py`, then `python sim/simulate.py` | 15 |
 | Web | `cd web && npm ci && npm test && npm run build` (dev server: `npm run dev`) | 71 |
 

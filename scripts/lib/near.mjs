@@ -11,7 +11,7 @@ export function txId(output) {
   return m ? m[1] : null;
 }
 
-async function rpc(method, params) {
+export async function rpc(method, params) {
   const res = await fetch(RPC, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
